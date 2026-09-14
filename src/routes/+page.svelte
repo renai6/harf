@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import type { ResolvedPathname } from '$app/types';
 	import { getStore } from '$lib/storage/app-store';
 	import { bestScore } from '$lib/storage/boards';
 	import Avatar from '$lib/ui/Avatar.svelte';
@@ -11,11 +10,6 @@
 	const store = getStore();
 	let adding = $state(false);
 	const hasPlayers = $derived(store.data.players.length > 0);
-
-	// `/settings` doesn't exist yet (added in a later task), so it isn't in the generated route
-	// union and `resolve()` can't type-check it. Retype the call for this route only; drop once
-	// it lands and `resolve(path)` type-checks directly.
-	const resolveAny = resolve as (path: string) => ResolvedPathname;
 
 	function choose(id: string) {
 		if (store.selectPlayer(id)) goto(resolve('/modes'));
@@ -79,5 +73,5 @@
 
 <nav aria-label="More" class="mt-8 grid grid-cols-2 gap-3">
 	<a href={resolve('/leaderboard')} class={buttonClass('ghost')}>Leaderboard</a>
-	<a href={resolveAny('/settings')} class={buttonClass('ghost')}>Settings</a>
+	<a href={resolve('/settings')} class={buttonClass('ghost')}>Settings</a>
 </nav>
