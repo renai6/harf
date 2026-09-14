@@ -1,1 +1,80 @@
 @import 'tailwindcss';
+
+@theme {
+	--color-ink: #3b1235;
+	--color-crimson: #e8175d;
+	--color-crimson-light: #ff4d8a;
+	--color-purple: #7b3fb2;
+	--color-purple-light: #9656d6;
+	--color-success: #1fb574;
+
+	--font-sans: 'Rubik', ui-sans-serif, system-ui, sans-serif;
+	--font-arabic: 'Noto Naskh Arabic', serif;
+
+	--shadow-soft: 0 6px 18px rgba(59, 18, 53, 0.1);
+	--shadow-primary: 0 10px 22px rgba(232, 23, 93, 0.35);
+	--shadow-purple: 0 8px 18px rgba(123, 63, 178, 0.35);
+	--shadow-item: 0 18px 40px rgba(232, 23, 93, 0.18);
+
+	--radius-card: 20px;
+	--radius-item: 28px;
+	--radius-button: 18px;
+}
+
+@layer base {
+	html {
+		background-color: #f6a3c6;
+		color: var(--color-ink);
+	}
+
+	body {
+		min-height: 100dvh;
+		background-image: linear-gradient(170deg, #ffe0cf 0%, #ffc2d4 55%, #f6a3c6 100%);
+		font-family: var(--font-sans);
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	:focus-visible {
+		outline: 3px solid var(--color-purple);
+		outline-offset: 2px;
+	}
+}
+
+@keyframes item-pop {
+	from {
+		transform: scale(0.94);
+	}
+	to {
+		transform: scale(1);
+	}
+}
+
+@keyframes shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20%,
+	60% {
+		transform: translateX(-6px);
+	}
+	40%,
+	80% {
+		transform: translateX(6px);
+	}
+}
+
+.item-pop {
+	animation: item-pop 150ms ease-out;
+}
+
+.shake {
+	animation: shake 300ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.item-pop,
+	.shake {
+		animation: none;
+	}
+}
