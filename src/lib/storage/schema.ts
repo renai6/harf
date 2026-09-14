@@ -1,0 +1,123 @@
+import { isBoardKey, type BoardKey } from '$lib/game/levels';
+
+export const STORAGE_KEY = 'harf-sprint:v1';
+export const CORRUPT_KEY_PREFIX = 'harf-sprint:corrupt:';
+export const RUN_CAP = 1000;
+export const NAME_MAX = 20;
+
+export type Player = { id: string; name: string; createdAt: string };
+
+export type Run = {
+	id: string;
+	playerId: string;
+	board: BoardKey;
+	score: number;
+	correct: number;
+	attempts: number;
+	bestStreak: number;
+	/** Item ids (letter characters in Letters mode). */
+	missed: string[];
+	finishedAt: string;
+};
+
+export type StoredData = {
+	version: 1;
+	players: Player[];
+	lastPlayerId: string | null;
+	/** Newest first, capped at RUN_CAP. */
+	runs: Run[];
+	/** Best run per board per player id. Kept separately so the run cap never loses bests. */
+	bests: Partial<Record<BoardKey, Record<string, Run>>>;
+	settings: { sound: boolean };
+};
+
+export function emptyData(): StoredData {
+	return {
+		version: 1,
+		players: [],
+		lastPlayerId: null,
+		runs: [],
+		bests: {},
+		settings: { sound: true }
+	};
+}
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+	typeof v === 'object' && v !== null && !Array.isArray(v);
+const isString = (v: unknown): v is string => typeof v === 'string';
+const isCount = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
+
+function isPlayer(v: unknown): v is Player {
+	return isObject(v) && isString(v.id) && isString(v.name) && isString(v.createdAt);
+}
+
+function isRun(v: unknown): v is Run {
+	if (!isObject(v)) return false;
+	const { missed } = v;
+	return (
+		isString(v.id) &&
+		isString(v.playerId) &&
+		isBoardKey(v.board) &&
+		isCount(v.score) &&
+		isCount(v.correct) &&
+		isCount(v.attempts) &&
+		isCount(v.bestStreak) &&
+		Array.isArray(missed) &&
+		missed.every(isString) &&
+		isString(v.finishedAt)
+	);
+}
+
+export function isStoredData(value: unknown): value is StoredData {
+	if (!isObject(value) || value.version !== 1) return false;
+	const { players, lastPlayerId, runs, bests, settings } = value;
+	return (
+		Array.isArray(players) &&
+		players.every(isPlayer) &&
+		(lastPlayerId === null || isString(lastPlayerId)) &&
+		Array.isArray(runs) &&
+		runs.every(isRun) &&
+		isObject(bests) &&
+		Object.entries(bests).every(
+			([key, byPlayer]) =>
+				isBoardKey(key) && isObject(byPlayer) && Object.values(byPlayer).every(isRun)
+		) &&
+		isObject(settings) &&
+		typeof settings.sound === 'boolean'
+	);
+}
+
+/** Upgrades older stored shapes by `version`. Version 1 is the first, so this is the identity for now. */
+export function migrate(value: unknown): unknown {
+	return value;
+}
+
+export function parseData(raw: string | null): { data: StoredData; corrupt: boolean } {
+	if (raw === null) return { data: emptyData(), corrupt: false };
+	try {
+		const value = migrate(JSON.parse(raw));
+		if (isStoredData(value)) return { data: value, corrupt: false };
+	} catch {
+		// Unparseable JSON is handled as corrupt below.
+	}
+	return { data: emptyData(), corrupt: true };
+}
+
+export type NameError = 'empty' | 'too-long' | 'taken';
+
+export function normalizeName(name: string): string {
+	return name.trim().replace(/\s+/g, ' ');
+}
+
+export function validateName(
+	name: string,
+	players: readonly Player[],
+	ignoreId?: string
+): NameError | null {
+	const normalized = normalizeName(name);
+	if (normalized.length === 0) return 'empty';
+	if ([...normalized].length > NAME_MAX) return 'too-long';
+	const lower = normalized.toLocaleLowerCase();
+	const taken = players.some((p) => p.id !== ignoreId && p.name.toLocaleLowerCase() === lower);
+	return taken ? 'taken' : null;
+}
