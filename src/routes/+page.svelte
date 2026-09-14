@@ -12,10 +12,9 @@
 	let adding = $state(false);
 	const hasPlayers = $derived(store.data.players.length > 0);
 
-	// `/leaderboard` and `/settings` don't exist yet (added in later tasks), so they aren't in
-	// the generated route union and `resolve()` can't type-check them. Retype the call for
-	// these two routes only; drop once those routes land and `resolve(path)` type-checks
-	// directly.
+	// `/settings` doesn't exist yet (added in a later task), so it isn't in the generated route
+	// union and `resolve()` can't type-check it. Retype the call for this route only; drop once
+	// it lands and `resolve(path)` type-checks directly.
 	const resolveAny = resolve as (path: string) => ResolvedPathname;
 
 	function choose(id: string) {
@@ -79,6 +78,6 @@
 </main>
 
 <nav aria-label="More" class="mt-8 grid grid-cols-2 gap-3">
-	<a href={resolveAny('/leaderboard')} class={buttonClass('ghost')}>Leaderboard</a>
+	<a href={resolve('/leaderboard')} class={buttonClass('ghost')}>Leaderboard</a>
 	<a href={resolveAny('/settings')} class={buttonClass('ghost')}>Settings</a>
 </nav>
