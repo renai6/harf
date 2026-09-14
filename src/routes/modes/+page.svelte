@@ -58,9 +58,9 @@
 		<Avatar name={player.name} seed={player.id} />
 		<div class="min-w-0 flex-1">
 			<p class="text-xs text-ink/60">Playing as</p>
-			<p dir="auto" class="truncate font-bold">{player.name}</p>
+			<p dir="auto" class="truncate text-left font-bold">{player.name}</p>
 		</div>
-		<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm', class: 'text-sm' })}
+		<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm', class: '-mr-2 text-sm' })}
 			>Switch player</a
 		>
 	</header>

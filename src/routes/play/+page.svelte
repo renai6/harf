@@ -99,7 +99,9 @@
 		/>
 	{:else}
 		<header class="mb-4 flex items-center gap-3">
-			<a href={resolve('/modes')} class={buttonClass('ghost', { size: 'sm' })}>Quit</a>
+			<a href={resolve('/modes')} class={buttonClass('ghost', { size: 'sm', class: '-ml-2' })}
+				>Quit</a
+			>
 			<span class="flex-1"></span>
 			<Chip data-testid="sprint-score">Score {s.score}</Chip>
 			<Chip tone="crimson" data-testid="sprint-time">{Math.ceil(s.sprintLeft / 1000)}s</Chip>

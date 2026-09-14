@@ -4,8 +4,9 @@
 
 <div
 	class={[
-		'grid min-h-56 place-items-center rounded-item bg-white p-6 shadow-item ring-4 transition-shadow duration-150',
-		flash ? 'ring-success' : 'ring-transparent'
+		// The ring stays green and grows in; fading in from transparent passes through grey.
+		'grid min-h-56 place-items-center rounded-item bg-white p-6 shadow-item ring-success transition-shadow duration-150',
+		flash ? 'ring-4' : 'ring-0'
 	]}
 >
 	{#key text}

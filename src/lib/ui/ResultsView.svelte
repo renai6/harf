@@ -61,10 +61,13 @@
 			<ul class="grid grid-cols-2 gap-2">
 				{#each missed as letter (letter.char)}
 					<li class="flex items-center gap-3 rounded-card bg-white px-4 py-2 shadow-soft">
-						<span lang="ar" dir="rtl" class="font-arabic text-3xl leading-normal font-bold"
+						<span
+							lang="ar"
+							dir="rtl"
+							class="w-9 shrink-0 text-center font-arabic text-3xl leading-normal font-bold"
 							>{letter.char}</span
 						>
-						<span class="flex min-w-0 flex-col leading-tight">
+						<span class="flex min-w-0 flex-col items-start leading-tight">
 							<span class="font-bold">{letter.name}</span>
 							<span lang="ar" dir="rtl" class="font-arabic text-ink/70">{letter.arabicName}</span>
 						</span>

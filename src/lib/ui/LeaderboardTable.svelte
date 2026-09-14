@@ -24,7 +24,7 @@
 	>
 		<span class="w-6 text-right font-bold tabular-nums">{row.rank}</span>
 		<Avatar name={row.player.name} seed={row.player.id} size="sm" />
-		<span dir="auto" class="min-w-0 flex-1 truncate font-bold">{row.player.name}</span>
+		<span dir="auto" class="min-w-0 flex-1 truncate text-left font-bold">{row.player.name}</span>
 		<span class={['text-sm tabular-nums', current ? 'text-white/80' : 'text-ink/60']}>
 			{Math.round(accuracy(row.run.correct, row.run.attempts) * 100)}%
 		</span>

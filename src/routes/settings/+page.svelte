@@ -35,7 +35,7 @@
 <svelte:head><title>Settings · Harf Sprint</title></svelte:head>
 
 <header class="mb-6 flex items-center gap-3">
-	<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm' })}>Back</a>
+	<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm', class: '-ml-2' })}>Back</a>
 	<h1 class="text-2xl font-bold">Settings</h1>
 </header>
 
@@ -93,7 +93,9 @@
 					{:else}
 						<div class="flex items-center gap-2 rounded-card bg-white py-1 pr-1 pl-4 shadow-soft">
 							<Avatar name={player.name} seed={player.id} size="sm" />
-							<span dir="auto" class="min-w-0 flex-1 truncate font-bold">{player.name}</span>
+							<span dir="auto" class="min-w-0 flex-1 truncate text-left font-bold"
+								>{player.name}</span
+							>
 							<Button
 								variant="ghost"
 								size="sm"
@@ -134,7 +136,12 @@
 				oncancel={() => (confirmingReset = false)}
 			/>
 		{:else}
-			<Button variant="danger" class="self-start" onclick={() => (confirmingReset = true)}>
+			<Button
+				variant="danger"
+				size="sm"
+				class="-ml-2 self-start"
+				onclick={() => (confirmingReset = true)}
+			>
 				Reset all data
 			</Button>
 		{/if}

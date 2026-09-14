@@ -39,7 +39,7 @@
 <svelte:head><title>Leaderboard · Harf Sprint</title></svelte:head>
 
 <header class="mb-6 flex items-center gap-3">
-	<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm' })}>Back</a>
+	<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm', class: '-ml-2' })}>Back</a>
 	<h1 class="text-2xl font-bold">Leaderboard</h1>
 </header>
 
