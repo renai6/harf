@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import type { ResolvedPathname } from '$app/types';
 	import {
 		ITEM_LIMIT_MS,
 		LETTER_VARIANTS,
@@ -40,11 +39,6 @@
 		forms: 'Letters as they look at the start, middle or end of a word'
 	};
 
-	// `/play` doesn't exist yet (added in Task 12), so it isn't in the generated route union and
-	// `resolve()` can't type-check it. Retype the call for this route only; drop once `/play`
-	// lands and `resolve(path)` type-checks directly.
-	const resolveAny = resolve as (path: string) => ResolvedPathname;
-
 	$effect(() => {
 		if (!player) goto(resolve('/'), { replaceState: true });
 	});
@@ -53,7 +47,7 @@
 		const query = new URLSearchParams({ mode: 'letters', level, variant });
 		// resolve() cannot add a query string, so the resolved path is extended here.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(`${resolveAny('/play')}?${query}`);
+		goto(`${resolve('/play')}?${query}`);
 	}
 </script>
 
