@@ -40,18 +40,20 @@
 	});
 
 	function startRound() {
-		if (setup?.mode !== 'letters') return;
+		if (!player || setup?.mode !== 'letters') return;
 		runner?.stop();
 		save = null;
 		announcement = '';
+		// Captured now, so another tab switching player mid-sprint cannot move the run to someone else.
+		const playerId = player.id;
 		runner = createSprintRunner(
 			{ mode: 'letters', level: setup.level, variant: setup.variant, rng: Math.random },
-			handleOutcome
+			(outcome, state) => handleOutcome(outcome, state, playerId)
 		);
 		runner.start();
 	}
 
-	function handleOutcome(outcome: Outcome, state: SprintState) {
+	function handleOutcome(outcome: Outcome, state: SprintState, playerId: string) {
 		if (store.data.settings.sound) {
 			playSfx(outcome === 'correct' ? 'correct' : outcome === 'wrong' ? 'wrong' : 'timeup');
 		}
@@ -61,7 +63,7 @@
 			clearTimeout(flashTimer);
 			flashTimer = setTimeout(() => (flash = false), 200);
 		} else if (outcome === 'finished') {
-			save = store.saveRun({
+			save = store.saveRun(playerId, {
 				board: boardKey(state.config),
 				score: state.score,
 				correct: state.counters.correct,

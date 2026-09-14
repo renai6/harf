@@ -74,4 +74,25 @@ describe('names', () => {
 		expect(validateName('SARA', players, 'p1')).toBeNull();
 		expect(validateName('يوسف', players)).toBeNull();
 	});
+
+	it('removes invisible control and format characters', () => {
+		expect(normalizeName('Sa​ra')).toBe('Sara');
+		expect(normalizeName('‎Sara‏﻿')).toBe('Sara');
+		expect(normalizeName('Umm\t­ Yusuf\n')).toBe('Umm Yusuf');
+		expect(normalizeName('‍سارة‌')).toBe('سارة');
+	});
+
+	it('keeps Arabic marks and joiners between letters', () => {
+		expect(normalizeName('مُحَمَّد')).toBe('مُحَمَّد');
+		expect(normalizeName('نرگس‌آرا')).toBe('نرگس‌آرا');
+	});
+
+	it('treats names without a letter as empty and invisible differences as taken', () => {
+		expect(validateName('​', players)).toBe('empty');
+		expect(validateName('​⁠­', players)).toBe('empty');
+		expect(validateName('123', players)).toBe('empty');
+		expect(validateName('Sara​', players)).toBe('taken');
+		const stored: Player[] = [{ id: 'p2', name: 'Yusuf​', createdAt: '' }];
+		expect(validateName('yusuf', stored)).toBe('taken');
+	});
 });

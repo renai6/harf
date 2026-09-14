@@ -105,8 +105,15 @@ export function parseData(raw: string | null): { data: StoredData; corrupt: bool
 
 export type NameError = 'empty' | 'too-long' | 'taken';
 
+/**
+ * Invisible control and format characters. Whitespace is kept for the collapsing below, and
+ * zero-width joiners stay only between two letters or marks, where they shape Arabic-script text.
+ */
+const INVISIBLE =
+	/(?<![\p{L}\p{M}])[\u200c\u200d]|[\u200c\u200d](?![\p{L}\p{M}])|(?![\s\u200c\u200d])[\p{Cc}\p{Cf}]/gu;
+
 export function normalizeName(name: string): string {
-	return name.trim().replace(/\s+/g, ' ');
+	return name.replace(INVISIBLE, '').trim().replace(/\s+/g, ' ');
 }
 
 export function validateName(
@@ -115,9 +122,11 @@ export function validateName(
 	ignoreId?: string
 ): NameError | null {
 	const normalized = normalizeName(name);
-	if (normalized.length === 0) return 'empty';
+	if (!/\p{L}/u.test(normalized)) return 'empty';
 	if ([...normalized].length > NAME_MAX) return 'too-long';
 	const lower = normalized.toLocaleLowerCase();
-	const taken = players.some((p) => p.id !== ignoreId && p.name.toLocaleLowerCase() === lower);
+	const taken = players.some(
+		(p) => p.id !== ignoreId && normalizeName(p.name).toLocaleLowerCase() === lower
+	);
 	return taken ? 'taken' : null;
 }

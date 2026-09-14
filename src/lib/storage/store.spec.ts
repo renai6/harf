@@ -64,9 +64,9 @@ describe('players', () => {
 	it('deletes a player with their runs and bests', () => {
 		const { store } = setup();
 		store.addPlayer('Sara');
-		store.saveRun(newRun(5));
+		store.saveRun('id-1', newRun(5));
 		store.addPlayer('Yusuf');
-		store.saveRun(newRun(3));
+		store.saveRun('id-3', newRun(3));
 		expect(store.deletePlayer('id-3')).toBe(true);
 		expect(store.data.players.map((p) => p.name)).toEqual(['Sara']);
 		expect(store.data.lastPlayerId).toBeNull();
@@ -90,18 +90,37 @@ describe('runs', () => {
 	it('saves runs and tracks personal bests', () => {
 		const { store } = setup();
 		store.addPlayer('Sara');
-		const first = store.saveRun(newRun(10));
+		const first = store.saveRun('id-1', newRun(10));
 		expect(first).toMatchObject({ saved: true, personalBest: true });
-		expect(store.saveRun(newRun(8))).toMatchObject({ saved: true, personalBest: false });
-		const better = store.saveRun(newRun(11));
+		expect(store.saveRun('id-1', newRun(8))).toMatchObject({ saved: true, personalBest: false });
+		const better = store.saveRun('id-1', newRun(11));
 		expect(better).toMatchObject({ saved: true, personalBest: true });
 		expect(store.data.runs.map((r) => r.score)).toEqual([11, 8, 10]);
 		expect(store.data.bests['letters:normal:isolated']?.['id-1']?.score).toBe(11);
 	});
 
-	it('does not save without a current player', () => {
-		const { store } = setup();
-		expect(store.saveRun(newRun(10))).toEqual({ saved: false });
+	it('saves under the player who started the round after another tab switches player', () => {
+		const { store: tabA, reopen } = setup();
+		tabA.addPlayer('Sara');
+		const tabB = reopen();
+		tabB.addPlayer('Yusuf');
+		tabA.reload();
+		expect(tabA.data.lastPlayerId).toBe('id-2');
+		expect(tabA.saveRun('id-1', newRun(10))).toMatchObject({ saved: true, personalBest: true });
+		const saved = reopen().data;
+		expect(saved.runs.map((r) => r.playerId)).toEqual(['id-1']);
+		expect(Object.keys(saved.bests['letters:normal:isolated'] ?? {})).toEqual(['id-1']);
+	});
+
+	it('does not save for a player deleted in another tab', () => {
+		const { store: tabA, reopen } = setup();
+		tabA.addPlayer('Sara');
+		reopen().deletePlayer('id-1');
+		expect(tabA.saveRun('id-1', newRun(10))).toEqual({ saved: false });
+		expect(tabA.notice).toBeNull();
+		const saved = reopen().data;
+		expect(saved.runs).toEqual([]);
+		expect(saved.bests).toEqual({});
 	});
 
 	it('caps runs without losing bests', () => {
@@ -128,7 +147,7 @@ describe('runs', () => {
 		};
 		backend.setItem(STORAGE_KEY, JSON.stringify(seeded));
 		const { store } = setup(backend);
-		expect(store.saveRun(newRun(2))).toMatchObject({ saved: true, personalBest: false });
+		expect(store.saveRun('p1', newRun(2))).toMatchObject({ saved: true, personalBest: false });
 		expect(store.data.runs).toHaveLength(RUN_CAP);
 		expect(store.data.runs[0].score).toBe(2);
 		expect(store.data.runs.some((r) => r.id === 'old-best')).toBe(false);
@@ -154,7 +173,7 @@ describe('failures', () => {
 		const { store, backend } = setup();
 		store.addPlayer('Sara');
 		backend.failWrites = true;
-		expect(store.saveRun(newRun(10))).toEqual({ saved: false });
+		expect(store.saveRun('id-1', newRun(10))).toEqual({ saved: false });
 		expect(store.notice).toBe('write-failed');
 		expect(store.data.runs).toEqual([]);
 		expect(store.addPlayer('Yusuf')).toEqual({ error: 'write-failed' });

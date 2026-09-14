@@ -55,10 +55,14 @@ export function createStore(
 		data = result.data;
 	}
 
-	/** Reads the latest stored object, applies `change`, and writes the whole object back. */
-	function commit(change: (latest: StoredData) => StoredData): boolean {
+	/**
+	 * Reads the latest stored object, applies `change`, and writes the whole object back.
+	 * `change` returns null to skip the write, which then counts as not saved.
+	 */
+	function commit(change: (latest: StoredData) => StoredData | null): boolean {
 		const latest = parseData(readRaw());
 		const next = change(latest.corrupt ? data : latest.data);
+		if (next === null) return false;
 		try {
 			backend.setItem(STORAGE_KEY, JSON.stringify(next));
 		} catch {
@@ -131,12 +135,12 @@ export function createStore(
 				)
 			}));
 		},
-		saveRun(input: NewRun): SaveResult {
-			const playerId = data.lastPlayerId;
-			if (!playerId) return { saved: false };
+		/** Saves a run for the player who started the round, unless another tab has deleted them since. */
+		saveRun(playerId: string, input: NewRun): SaveResult {
 			const run: Run = { ...input, id: uuid(), playerId, finishedAt: now().toISOString() };
 			let personalBest = false;
 			const ok = commit((d) => {
+				if (!d.players.some((p) => p.id === playerId)) return null;
 				const board = d.bests[run.board] ?? {};
 				const previous = board[playerId];
 				personalBest = !previous || compareRuns(run, previous) < 0;
