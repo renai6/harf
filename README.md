@@ -1,42 +1,25 @@
-# sv
+# Harf Sprint
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A 60-second Arabic reading sprint for the whole family.
+Letters mode is multiple choice; words and sentences with speech recognition arrive in Phase 2.
+Players and scores are stored only in the browser (localStorage).
 
-## Creating a project
+## Develop
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
+```bash
+pnpm install
+pnpm dev
 ```
 
-To recreate this project with the same configuration:
+## Quality gates
 
-```sh
-# recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:typography" --install pnpm .
+```bash
+pnpm lint
+pnpm check
+pnpm test:unit --run
+pnpm test:e2e
 ```
 
-## Developing
+## Build
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+`pnpm build` writes the static site to `build/`.
