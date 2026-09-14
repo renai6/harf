@@ -12,20 +12,20 @@
 	let adding = $state(false);
 	const hasPlayers = $derived(store.data.players.length > 0);
 
-	// `/modes`, `/leaderboard` and `/settings` don't exist yet (added in later tasks), so they
-	// aren't in the generated route union and `resolve()` can't type-check them. Retype the
-	// call for these three routes only; drop once those routes land and `resolve(path)`
-	// type-checks directly.
+	// `/leaderboard` and `/settings` don't exist yet (added in later tasks), so they aren't in
+	// the generated route union and `resolve()` can't type-check them. Retype the call for
+	// these two routes only; drop once those routes land and `resolve(path)` type-checks
+	// directly.
 	const resolveAny = resolve as (path: string) => ResolvedPathname;
 
 	function choose(id: string) {
-		if (store.selectPlayer(id)) goto(resolveAny('/modes'));
+		if (store.selectPlayer(id)) goto(resolve('/modes'));
 	}
 
 	function create(name: string) {
 		const result = store.addPlayer(name);
 		if ('error' in result) return result.error;
-		goto(resolveAny('/modes'));
+		goto(resolve('/modes'));
 		return null;
 	}
 </script>
