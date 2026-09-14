@@ -150,6 +150,14 @@ describe('pause', () => {
 		expect(s).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 1_500 });
 	});
 
+	it('returns the same state for ticks while paused, so nothing re-renders', () => {
+		const paused = reduce(activeSprint(), { type: 'pause', now: 4_000 });
+		expect(tick(paused, 30_000)).toBe(paused);
+		expect(tick(paused, 49_000)).toBe(paused);
+		const resumed = tick(reduce(paused, { type: 'resume', now: 50_000 }), 50_500);
+		expect(resumed).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 1_500 });
+	});
+
 	it('resumes into the countdown or lockout it paused', () => {
 		let c = reduce(createSprint(config(), 0), { type: 'pause', now: 1_000 });
 		c = reduce(c, { type: 'resume', now: 9_000 });

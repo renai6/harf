@@ -154,7 +154,8 @@ export function reduce(state: SprintState, event: SprintEvent): SprintState {
 	if (state.phase === 'finished') return state;
 	switch (event.type) {
 		case 'tick':
-			return advance(state, event.now);
+			// Paused time never counts because resume resets lastEventAt, so the same object is kept and nothing re-renders.
+			return state.phase === 'paused' ? state : advance(state, event.now);
 		case 'answer': {
 			const s = advance(state, event.now);
 			if (s.phase !== 'active') return s;

@@ -8,7 +8,10 @@ import {
 	type SprintState
 } from './sprint';
 
-/** Drives a sprint with requestAnimationFrame and pauses it when the page is hidden. */
+/**
+ * Drives a sprint with requestAnimationFrame and pauses it when the page is hidden.
+ * The countdown starts when the runner is created, so call `start()` straight away.
+ */
 export function createSprintRunner(
 	config: SprintConfig,
 	onOutcome: (outcome: Outcome, state: SprintState) => void
@@ -37,7 +40,6 @@ export function createSprintRunner(
 			return state;
 		},
 		start() {
-			state = createSprint(config, performance.now());
 			document.addEventListener('visibilitychange', onVisibilityChange);
 			frame = requestAnimationFrame(loop);
 		},
