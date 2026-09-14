@@ -5,14 +5,18 @@
 	import { page } from '$app/state';
 	import { playSfx } from '$lib/audio/sfx';
 	import { letterByChar } from '$lib/content/letters';
-	import { parseBoardKey } from '$lib/game/levels';
+	import { boardKey, parseBoardKey } from '$lib/game/levels';
+	import { attempts } from '$lib/game/scoring';
 	import { itemLimit, type Outcome, type SprintState } from '$lib/game/sprint';
 	import { createSprintRunner, type SprintRunner } from '$lib/game/sprint.svelte';
 	import { getStore } from '$lib/storage/app-store';
+	import { boardRows } from '$lib/storage/boards';
+	import type { SaveResult } from '$lib/storage/store.svelte';
 	import AnswerGrid from '$lib/ui/AnswerGrid.svelte';
 	import Button from '$lib/ui/Button.svelte';
 	import Chip from '$lib/ui/Chip.svelte';
 	import ItemCard from '$lib/ui/ItemCard.svelte';
+	import ResultsView from '$lib/ui/ResultsView.svelte';
 	import TimerBar from '$lib/ui/TimerBar.svelte';
 	import { buttonClass } from '$lib/ui/styles';
 
@@ -25,6 +29,7 @@
 	);
 
 	let runner = $state.raw<SprintRunner | null>(null);
+	let save = $state.raw<SaveResult | null>(null);
 	let announcement = $state('');
 	let flash = $state(false);
 	let flashTimer: ReturnType<typeof setTimeout> | undefined;
@@ -37,6 +42,8 @@
 	function startRound() {
 		if (setup?.mode !== 'letters') return;
 		runner?.stop();
+		save = null;
+		announcement = '';
 		runner = createSprintRunner(
 			{ mode: 'letters', level: setup.level, variant: setup.variant, rng: Math.random },
 			handleOutcome
@@ -54,6 +61,14 @@
 			clearTimeout(flashTimer);
 			flashTimer = setTimeout(() => (flash = false), 200);
 		} else if (outcome === 'finished') {
+			save = store.saveRun({
+				board: boardKey(state.config),
+				score: state.score,
+				correct: state.counters.correct,
+				attempts: attempts(state.counters),
+				bestStreak: state.counters.bestStreak,
+				missed: [...state.missed]
+			});
 			announcement = `Time is up. You scored ${state.score}.`;
 		} else if (state.reveal) {
 			const correct = letterByChar(state.reveal.correct);
@@ -75,12 +90,13 @@
 {#if player && runner}
 	{@const s = runner.state}
 	{#if s.phase === 'finished'}
-		<main class="grid flex-1 place-items-center text-center">
-			<div>
-				<h1 class="text-3xl font-bold">Time's up!</h1>
-				<p class="text-7xl font-bold text-crimson tabular-nums">{s.score}</p>
-			</div>
-		</main>
+		<ResultsView
+			state={s}
+			{save}
+			rows={boardRows(store.data, boardKey(s.config))}
+			currentPlayerId={player.id}
+			onagain={startRound}
+		/>
 	{:else}
 		<header class="mb-4 flex items-center gap-3">
 			<a href={resolve('/modes')} class={buttonClass('ghost', { size: 'sm' })}>Quit</a>
