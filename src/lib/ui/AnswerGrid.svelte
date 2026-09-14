@@ -36,7 +36,7 @@
 			aria-keyshortcuts={KEYS[index]}
 			onclick={() => onanswer(choice)}
 			class={[
-				'flex min-h-16 flex-wrap items-center justify-center gap-x-2 rounded-button px-3 py-2 text-lg shadow-soft transition',
+				'flex min-h-18 flex-wrap items-center justify-center gap-x-2 rounded-button px-3 py-2 text-lg shadow-soft transition',
 				look === 'idle' && 'bg-white text-ink',
 				look === 'idle' && disabled && 'opacity-60',
 				// White on success green is under 3:1 contrast; ink reads clearly.
