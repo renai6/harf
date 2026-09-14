@@ -17,7 +17,7 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await answer(page, true);
 	await answer(page, true);
 	await answer(page, false);
-	await page.clock.runFor(61_000);
+	await page.clock.fastForward(61_000);
 
 	await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
 	await expect(page.getByTestId('result-score')).toHaveText('3');
@@ -30,7 +30,7 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await page.clock.runFor(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);
 	await answer(page, false);
-	await page.clock.runFor(61_000);
+	await page.clock.fastForward(61_000);
 	await expect(page.getByTestId('result-score')).toHaveText('0');
 	await expect(page.getByText('New personal best')).toBeHidden();
 

@@ -33,7 +33,7 @@ test('counts down, scores correct answers, locks out wrong ones and ends', async
 	await expect(answerButtons(page).first()).toBeEnabled();
 	await expect(page.getByTestId('sprint-score')).toHaveText('Score 2');
 
-	await page.clock.runFor(60_000);
+	await page.clock.fastForward(60_000);
 	await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
 });
 
