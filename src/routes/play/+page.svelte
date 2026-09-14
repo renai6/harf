@@ -112,7 +112,7 @@
 		<main class="flex flex-1 flex-col gap-4">
 			{#if s.phase === 'countdown' || s.resumeTo === 'countdown'}
 				<div class="grid flex-1 place-items-center">
-					<p class="text-9xl font-bold text-crimson tabular-nums">
+					<p class="text-9xl font-bold text-crimson-deep tabular-nums">
 						{Math.ceil(s.countdownLeft / 1000)}
 					</p>
 				</div>

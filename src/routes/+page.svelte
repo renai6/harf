@@ -44,7 +44,7 @@
 					>
 						<Avatar name={player.name} seed={player.id} size="lg" />
 						<span dir="auto" class="max-w-full truncate font-bold">{player.name}</span>
-						<span class="text-xs text-ink/60"
+						<span class="text-xs text-ink/75"
 							>{best === null ? 'No scores yet' : `Best ${best}`}</span
 						>
 					</button>

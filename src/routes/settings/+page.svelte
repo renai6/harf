@@ -70,7 +70,7 @@
 	<section class="flex flex-col gap-2">
 		<h2 class="font-bold">Players</h2>
 		{#if store.data.players.length === 0}
-			<p class="text-ink/60">No players yet.</p>
+			<p class="text-ink/75">No players yet.</p>
 		{/if}
 		<ul class="flex flex-col gap-2">
 			{#each store.data.players as player (player.id)}
@@ -127,7 +127,7 @@
 
 	<section class="flex flex-col gap-2">
 		<h2 class="font-bold">Data</h2>
-		<p class="text-sm text-ink/60">Players and scores are saved only in this browser.</p>
+		<p class="text-sm text-ink/75">Players and scores are saved only in this browser.</p>
 		{#if confirmingReset}
 			<ConfirmPanel
 				message="Delete all players, scores and settings?"
@@ -139,7 +139,7 @@
 			<Button
 				variant="danger"
 				size="sm"
-				class="-ml-2 self-start"
+				class="self-start"
 				onclick={() => (confirmingReset = true)}
 			>
 				Reset all data

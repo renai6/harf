@@ -50,7 +50,7 @@
 		{@attach (node) => node.focus()}
 	/>
 	{#if error}
-		<p id="{id}-error" class="text-sm font-bold text-crimson">{MESSAGES[error]}</p>
+		<p id="{id}-error" class="text-sm font-bold text-crimson-deep">{MESSAGES[error]}</p>
 	{/if}
 	<div class="flex gap-3">
 		{#if oncancel}

@@ -4,6 +4,8 @@
 	--color-ink: #3b1235;
 	--color-crimson: #e8175d;
 	--color-crimson-light: #ff4d8a;
+	/* Not a spec token: a deeper crimson for text on crimson or on the page gradient, meeting WCAG AA (4.5:1). */
+	--color-crimson-deep: #c20e4b;
 	--color-purple: #7b3fb2;
 	--color-purple-light: #9656d6;
 	--color-success: #1fb574;

@@ -4,7 +4,14 @@
 	let { name, seed, size = 'md' }: Props = $props();
 
 	// Dark enough for white text; chosen by player id so a rename keeps the color.
-	const COLORS = ['#e8175d', '#7b3fb2', '#0f7a55', '#c2410c', '#1d4ed8', '#9d174d'];
+	const COLORS = [
+		'var(--color-crimson-deep)',
+		'#7b3fb2',
+		'#0f7a55',
+		'#c2410c',
+		'#1d4ed8',
+		'#9d174d'
+	];
 
 	const color = $derived(
 		COLORS[[...seed].reduce((sum, char) => sum + (char.codePointAt(0) ?? 0), 0) % COLORS.length]

@@ -41,7 +41,7 @@
 				look === 'idle' && disabled && 'opacity-60',
 				// White on success green is under 3:1 contrast; ink reads clearly.
 				look === 'correct' && 'bg-success text-ink',
-				look === 'wrong' && 'shake bg-crimson text-white'
+				look === 'wrong' && 'shake bg-crimson-deep text-white'
 			]}
 		>
 			<span class="font-bold">{letter.name}</span>

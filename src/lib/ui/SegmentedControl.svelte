@@ -13,7 +13,9 @@
 			disabled={option.disabled}
 			class={[
 				'min-h-12 flex-1 rounded-full px-3 text-sm font-bold transition disabled:opacity-40',
-				value === option.value ? 'bg-white text-crimson shadow-soft' : 'text-ink/70 hover:text-ink'
+				value === option.value
+					? 'bg-white text-crimson-deep shadow-soft'
+					: 'text-ink/70 hover:text-ink'
 			]}
 			onclick={() => (value = option.value)}
 		>

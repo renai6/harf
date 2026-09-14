@@ -12,7 +12,7 @@
 	class={[
 		'inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-sm font-bold tabular-nums',
 		tone === 'white' && 'bg-white text-ink shadow-soft',
-		tone === 'crimson' && 'bg-crimson text-white shadow-primary',
+		tone === 'crimson' && 'bg-crimson-deep text-white shadow-primary',
 		tone === 'purple' && 'bg-linear-to-br from-purple-light to-purple text-white shadow-purple'
 	]}
 	{...rest}

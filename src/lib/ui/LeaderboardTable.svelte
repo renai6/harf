@@ -25,7 +25,7 @@
 		<span class="w-6 text-right font-bold tabular-nums">{row.rank}</span>
 		<Avatar name={row.player.name} seed={row.player.id} size="sm" />
 		<span dir="auto" class="min-w-0 flex-1 truncate text-left font-bold">{row.player.name}</span>
-		<span class={['text-sm tabular-nums', current ? 'text-white/80' : 'text-ink/60']}>
+		<span class={['text-sm tabular-nums', current ? 'text-white' : 'text-ink/75']}>
 			{Math.round(accuracy(row.run.correct, row.run.attempts) * 100)}%
 		</span>
 		<span class="w-10 text-right text-xl font-bold tabular-nums">{row.run.score}</span>
@@ -40,7 +40,7 @@
 			{@render item(row)}
 		{/each}
 		{#if mine}
-			<li aria-hidden="true" class="text-center leading-none text-ink/50">...</li>
+			<li aria-hidden="true" class="text-center leading-none text-ink/75">...</li>
 			{@render item(mine)}
 		{/if}
 	</ol>

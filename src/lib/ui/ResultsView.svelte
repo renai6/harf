@@ -32,19 +32,19 @@
 		<p data-testid="result-score" class="text-7xl font-bold text-crimson tabular-nums">
 			{state.score}
 		</p>
-		<p class="text-sm text-ink/60">{state.score === 1 ? 'point' : 'points'}</p>
+		<p class="text-sm text-ink/75">{state.score === 1 ? 'point' : 'points'}</p>
 		{#if save?.saved && save.personalBest}
 			<div class="mt-3"><Chip tone="purple">New personal best</Chip></div>
 		{:else if save && !save.saved}
-			<p class="mt-3 text-sm font-bold text-crimson">This run could not be saved.</p>
+			<p class="mt-3 text-sm font-bold text-crimson-deep">This run could not be saved.</p>
 		{/if}
 		<dl class="mt-5 grid grid-cols-2 gap-3">
 			<div class="rounded-card bg-ink/5 p-3">
-				<dt class="text-xs text-ink/60">Accuracy</dt>
+				<dt class="text-xs text-ink/75">Accuracy</dt>
 				<dd class="text-2xl font-bold tabular-nums">{percent}%</dd>
 			</div>
 			<div class="rounded-card bg-ink/5 p-3">
-				<dt class="text-xs text-ink/60">Best streak</dt>
+				<dt class="text-xs text-ink/75">Best streak</dt>
 				<dd class="text-2xl font-bold tabular-nums">{state.counters.bestStreak}</dd>
 			</div>
 		</dl>
