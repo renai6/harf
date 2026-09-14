@@ -50,12 +50,16 @@ test('pauses while the page is hidden and resumes on Continue', async ({ page })
 	await setHidden(page, true);
 	const dialog = page.getByRole('dialog', { name: 'Paused' });
 	await expect(dialog).toBeVisible();
+	await expect(dialog.getByRole('button', { name: 'Continue' })).toBeFocused();
+	await expect(page.locator('header')).toHaveAttribute('inert');
+	await expect(page.locator('main')).toHaveAttribute('inert');
 	await page.clock.fastForward(20_000);
 	await expect(time).toHaveText('60s');
 
 	await setHidden(page, false);
 	await dialog.getByRole('button', { name: 'Continue' }).click();
 	await expect(dialog).toBeHidden();
+	await expect(page.locator('main')).not.toHaveAttribute('inert');
 	// Only the time after Continue counts: 2 s, not the 20 s spent paused.
 	await page.clock.fastForward(2_000);
 	await expect(time).toHaveText('58s');

@@ -100,7 +100,8 @@
 			onagain={startRound}
 		/>
 	{:else}
-		<header class="mb-4 flex items-center gap-3">
+		<!-- inert keeps keyboard focus inside the modal pause dialog. -->
+		<header inert={s.phase === 'paused'} class="mb-4 flex items-center gap-3">
 			<a href={resolve('/modes')} class={buttonClass('ghost', { size: 'sm', class: '-ml-2' })}
 				>Quit</a
 			>
@@ -109,7 +110,7 @@
 			<Chip tone="crimson" data-testid="sprint-time">{Math.ceil(s.sprintLeft / 1000)}s</Chip>
 		</header>
 
-		<main class="flex flex-1 flex-col gap-4">
+		<main inert={s.phase === 'paused'} class="flex flex-1 flex-col gap-4">
 			{#if s.phase === 'countdown' || s.resumeTo === 'countdown'}
 				<div class="grid flex-1 place-items-center">
 					<p class="text-9xl font-bold text-crimson-deep tabular-nums">
