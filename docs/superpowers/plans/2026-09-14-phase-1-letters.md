@@ -2603,9 +2603,9 @@ export function buttonClass(
 <span
 	class={[
 		'inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-sm font-bold tabular-nums',
-		tone === 'white' && 'text-ink shadow-soft bg-white',
-		tone === 'crimson' && 'bg-crimson shadow-primary text-white',
-		tone === 'purple' && 'from-purple-light to-purple shadow-purple bg-linear-to-br text-white'
+		tone === 'white' && 'bg-white text-ink shadow-soft',
+		tone === 'crimson' && 'bg-crimson text-white shadow-primary',
+		tone === 'purple' && 'bg-linear-to-br from-purple-light to-purple text-white shadow-purple'
 	]}
 	{...rest}
 >
@@ -2631,7 +2631,7 @@ export function buttonClass(
 			disabled={option.disabled}
 			class={[
 				'min-h-12 flex-1 rounded-full px-3 text-sm font-bold transition disabled:opacity-40',
-				value === option.value ? 'text-crimson shadow-soft bg-white' : 'text-ink/70 hover:text-ink'
+				value === option.value ? 'bg-white text-crimson shadow-soft' : 'text-ink/70 hover:text-ink'
 			]}
 			onclick={() => (value = option.value)}
 		>
@@ -2694,10 +2694,10 @@ export function buttonClass(
 	{disabled}
 	{onclick}
 	class={[
-		'rounded-card flex min-h-28 flex-col items-center justify-center gap-1 p-3 text-center transition active:translate-y-px disabled:opacity-50',
+		'flex min-h-28 flex-col items-center justify-center gap-1 rounded-card p-3 text-center transition active:translate-y-px disabled:opacity-50',
 		selected
-			? 'from-purple-light to-purple shadow-purple bg-linear-to-br text-white'
-			: 'text-ink shadow-soft bg-white'
+			? 'bg-linear-to-br from-purple-light to-purple text-white shadow-purple'
+			: 'bg-white text-ink shadow-soft'
 	]}
 >
 	<span lang="ar" dir="rtl" class="font-arabic text-3xl leading-snug font-bold">{arabic}</span>
@@ -2722,7 +2722,7 @@ export function buttonClass(
 	};
 </script>
 
-<div role="status" class="rounded-card shadow-soft mb-4 flex items-center gap-3 bg-white p-4">
+<div role="status" class="mb-4 flex items-center gap-3 rounded-card bg-white p-4 shadow-soft">
 	<p class="flex-1 text-sm">{MESSAGES[notice]}</p>
 	<Button variant="ghost" onclick={ondismiss}>Dismiss</Button>
 </div>
@@ -2747,7 +2747,7 @@ export function buttonClass(
 <div
 	role="group"
 	aria-label="Confirm"
-	class="rounded-card shadow-soft flex flex-col gap-3 bg-white p-4"
+	class="flex flex-col gap-3 rounded-card bg-white p-4 shadow-soft"
 >
 	<p class="font-bold">{message}</p>
 	<div class="grid grid-cols-2 gap-3">
@@ -2927,7 +2927,7 @@ Expected: FAIL, no "Harf Sprint" heading.
 <form
 	onsubmit={submit}
 	novalidate
-	class="rounded-card shadow-soft flex flex-col gap-3 bg-white p-4"
+	class="flex flex-col gap-3 rounded-card bg-white p-4 shadow-soft"
 >
 	<label for="{id}-name" class="font-bold">{label}</label>
 	<input
@@ -2940,11 +2940,11 @@ Expected: FAIL, no "Harf Sprint" heading.
 		dir="auto"
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error ? `${id}-error` : undefined}
-		class="rounded-button border-ink/15 min-h-12 border-2 bg-white px-4 text-lg"
+		class="min-h-12 rounded-button border-2 border-ink/15 bg-white px-4 text-lg"
 		{@attach (node) => node.focus()}
 	/>
 	{#if error}
-		<p id="{id}-error" class="text-crimson text-sm font-bold">{MESSAGES[error]}</p>
+		<p id="{id}-error" class="text-sm font-bold text-crimson">{MESSAGES[error]}</p>
 	{/if}
 	<div class="flex gap-3">
 		{#if oncancel}
@@ -2988,9 +2988,9 @@ When there are no players yet, the form is shown directly without a Cancel butto
 <svelte:head><title>Harf Sprint</title></svelte:head>
 
 <header class="mb-6 text-center">
-	<p lang="ar" dir="rtl" class="font-arabic text-crimson text-6xl leading-snug font-bold">حَرْف</p>
+	<p lang="ar" dir="rtl" class="font-arabic text-6xl leading-snug font-bold text-crimson">حَرْف</p>
 	<h1 class="text-3xl font-bold">Harf Sprint</h1>
-	<p class="text-ink/70 mt-1">Who is playing?</p>
+	<p class="mt-1 text-ink/70">Who is playing?</p>
 </header>
 
 <main class="flex flex-1 flex-col gap-4">
@@ -3002,11 +3002,11 @@ When there are no players yet, the form is shown directly without a Cancel butto
 					<button
 						type="button"
 						onclick={() => choose(player.id)}
-						class="rounded-card shadow-soft flex min-h-32 w-full flex-col items-center justify-center gap-2 bg-white p-3 transition active:translate-y-px"
+						class="flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-card bg-white p-3 shadow-soft transition active:translate-y-px"
 					>
 						<Avatar name={player.name} seed={player.id} size="lg" />
 						<span dir="auto" class="max-w-full truncate font-bold">{player.name}</span>
-						<span class="text-ink/60 text-xs"
+						<span class="text-xs text-ink/60"
 							>{best === null ? 'No scores yet' : `Best ${best}`}</span
 						>
 					</button>
@@ -3168,7 +3168,7 @@ Expected: FAIL, `/modes` has no "Pick a sprint" heading and does not redirect.
 	<header class="mb-6 flex items-center gap-3">
 		<Avatar name={player.name} seed={player.id} />
 		<div class="min-w-0 flex-1">
-			<p class="text-ink/60 text-xs">Playing as</p>
+			<p class="text-xs text-ink/60">Playing as</p>
 			<p dir="auto" class="truncate font-bold">{player.name}</p>
 		</div>
 		<a href={resolve('/')} class={buttonClass('ghost', { size: 'sm', class: 'text-sm' })}
@@ -3194,26 +3194,26 @@ Expected: FAIL, `/modes` has no "Pick a sprint" heading and does not redirect.
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Speed</h2>
 			<SegmentedControl label="Speed" options={levelOptions} bind:value={level} />
-			<p class="text-ink/60 text-sm">{ITEM_LIMIT_MS.letters[level] / 1000} seconds per letter</p>
+			<p class="text-sm text-ink/60">{ITEM_LIMIT_MS.letters[level] / 1000} seconds per letter</p>
 		</section>
 
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Letter shapes</h2>
 			<SegmentedControl label="Letter shapes" options={variantOptions} bind:value={variant} />
-			<p class="text-ink/60 text-sm">{VARIANT_HINTS[variant]}</p>
+			<p class="text-sm text-ink/60">{VARIANT_HINTS[variant]}</p>
 		</section>
 
-		<dl class="rounded-card shadow-soft grid grid-cols-3 gap-3 bg-white p-4 text-center">
+		<dl class="grid grid-cols-3 gap-3 rounded-card bg-white p-4 text-center shadow-soft">
 			<div>
-				<dt class="text-ink/60 text-xs">Best</dt>
+				<dt class="text-xs text-ink/60">Best</dt>
 				<dd class="text-2xl font-bold tabular-nums">{best ? best.run.score : '-'}</dd>
 			</div>
 			<div>
-				<dt class="text-ink/60 text-xs">Rank</dt>
+				<dt class="text-xs text-ink/60">Rank</dt>
 				<dd class="text-2xl font-bold tabular-nums">{best ? `#${best.rank}` : '-'}</dd>
 			</div>
 			<div>
-				<dt class="text-ink/60 text-xs">Accuracy</dt>
+				<dt class="text-xs text-ink/60">Accuracy</dt>
 				<dd class="text-2xl font-bold tabular-nums">
 					{best ? `${Math.round(accuracy(best.run.correct, best.run.attempts) * 100)}%` : '-'}
 				</dd>
@@ -3491,7 +3491,7 @@ export type SprintRunner = ReturnType<typeof createSprintRunner>;
 	class="h-3 overflow-hidden rounded-full bg-white/60"
 >
 	<div
-		class="from-purple to-purple-light h-full rounded-full bg-linear-to-r"
+		class="h-full rounded-full bg-linear-to-r from-purple to-purple-light"
 		style:width="{percent}%"
 	></div>
 </div>
@@ -3506,7 +3506,7 @@ export type SprintRunner = ReturnType<typeof createSprintRunner>;
 
 <div
 	class={[
-		'rounded-item shadow-item grid min-h-56 place-items-center bg-white p-6 ring-4 transition-shadow duration-150',
+		'grid min-h-56 place-items-center rounded-item bg-white p-6 shadow-item ring-4 transition-shadow duration-150',
 		flash ? 'ring-success' : 'ring-transparent'
 	]}
 >
@@ -3515,7 +3515,7 @@ export type SprintRunner = ReturnType<typeof createSprintRunner>;
 			data-testid="prompt"
 			lang="ar"
 			dir="rtl"
-			class="item-pop font-arabic text-ink leading-normal font-bold"
+			class="item-pop font-arabic leading-normal font-bold text-ink"
 			style:font-size="clamp(6rem, 32vw, 9rem)"
 		>
 			{text}
@@ -3565,8 +3565,8 @@ export type SprintRunner = ReturnType<typeof createSprintRunner>;
 			aria-keyshortcuts={KEYS[index]}
 			onclick={() => onanswer(choice)}
 			class={[
-				'rounded-button shadow-soft flex min-h-16 flex-wrap items-center justify-center gap-x-2 px-3 py-2 text-lg transition',
-				look === 'idle' && 'text-ink bg-white',
+				'flex min-h-16 flex-wrap items-center justify-center gap-x-2 rounded-button px-3 py-2 text-lg shadow-soft transition',
+				look === 'idle' && 'bg-white text-ink',
 				look === 'idle' && disabled && 'opacity-60',
 				look === 'correct' && 'bg-success text-white',
 				look === 'wrong' && 'shake bg-crimson text-white'
@@ -3666,7 +3666,7 @@ Task 13 replaces the `finished` branch with the results view and adds "Again".
 		<main class="grid flex-1 place-items-center text-center">
 			<div>
 				<h1 class="text-3xl font-bold">Time's up!</h1>
-				<p class="text-crimson text-7xl font-bold tabular-nums">{s.score}</p>
+				<p class="text-7xl font-bold text-crimson tabular-nums">{s.score}</p>
 			</div>
 		</main>
 	{:else}
@@ -3680,7 +3680,7 @@ Task 13 replaces the `finished` branch with the results view and adds "Again".
 		<main class="flex flex-1 flex-col gap-4">
 			{#if s.phase === 'countdown' || s.resumeTo === 'countdown'}
 				<div class="grid flex-1 place-items-center">
-					<p class="text-crimson text-9xl font-bold tabular-nums">
+					<p class="text-9xl font-bold text-crimson tabular-nums">
 						{Math.ceil(s.countdownLeft / 1000)}
 					</p>
 				</div>
@@ -3698,15 +3698,15 @@ Task 13 replaces the `finished` branch with the results view and adds "Again".
 	{/if}
 
 	{#if s.phase === 'paused'}
-		<div class="bg-ink/40 fixed inset-0 z-10 grid place-items-center px-4 backdrop-blur-sm">
+		<div class="fixed inset-0 z-10 grid place-items-center bg-ink/40 px-4 backdrop-blur-sm">
 			<div
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="paused-title"
-				class="rounded-item shadow-item w-full max-w-sm bg-white p-6 text-center"
+				class="w-full max-w-sm rounded-item bg-white p-6 text-center shadow-item"
 			>
 				<h2 id="paused-title" class="text-2xl font-bold">Paused</h2>
-				<p class="text-ink/70 mt-1">The clock stops while you are away.</p>
+				<p class="mt-1 text-ink/70">The clock stops while you are away.</p>
 				<Button
 					class="mt-4 w-full"
 					onclick={() => runner?.resume()}
@@ -3827,10 +3827,10 @@ Expected: FAIL, no `result-score`.
 	<li
 		aria-current={current ? 'true' : undefined}
 		class={[
-			'rounded-card flex min-h-14 items-center gap-3 px-4 py-2',
+			'flex min-h-14 items-center gap-3 rounded-card px-4 py-2',
 			current
-				? 'from-purple-light to-purple shadow-purple bg-linear-to-br text-white'
-				: 'shadow-soft bg-white'
+				? 'bg-linear-to-br from-purple-light to-purple text-white shadow-purple'
+				: 'bg-white shadow-soft'
 		]}
 	>
 		<span class="w-6 text-right font-bold tabular-nums">{row.rank}</span>
@@ -3844,14 +3844,14 @@ Expected: FAIL, no `result-score`.
 {/snippet}
 
 {#if rows.length === 0}
-	<p class="rounded-card text-ink/70 bg-white/70 p-5 text-center">No scores yet. Be the first!</p>
+	<p class="rounded-card bg-white/70 p-5 text-center text-ink/70">No scores yet. Be the first!</p>
 {:else}
 	<ol aria-label="Leaderboard" class="flex flex-col gap-2">
 		{#each top as row (row.player.id)}
 			{@render item(row)}
 		{/each}
 		{#if mine}
-			<li aria-hidden="true" class="text-ink/50 text-center leading-none">...</li>
+			<li aria-hidden="true" class="text-center leading-none text-ink/50">...</li>
 			{@render item(mine)}
 		{/if}
 	</ol>
@@ -3890,24 +3890,24 @@ Expected: FAIL, no `result-score`.
 </script>
 
 <main class="flex flex-1 flex-col gap-6">
-	<section class="rounded-item shadow-item bg-white p-6 text-center">
-		<h1 class="text-ink/70 text-lg font-bold">Time's up!</h1>
-		<p data-testid="result-score" class="text-crimson text-7xl font-bold tabular-nums">
+	<section class="rounded-item bg-white p-6 text-center shadow-item">
+		<h1 class="text-lg font-bold text-ink/70">Time's up!</h1>
+		<p data-testid="result-score" class="text-7xl font-bold text-crimson tabular-nums">
 			{state.score}
 		</p>
-		<p class="text-ink/60 text-sm">{state.score === 1 ? 'point' : 'points'}</p>
+		<p class="text-sm text-ink/60">{state.score === 1 ? 'point' : 'points'}</p>
 		{#if save?.saved && save.personalBest}
 			<div class="mt-3"><Chip tone="purple">New personal best</Chip></div>
 		{:else if save && !save.saved}
-			<p class="text-crimson mt-3 text-sm font-bold">This run could not be saved.</p>
+			<p class="mt-3 text-sm font-bold text-crimson">This run could not be saved.</p>
 		{/if}
 		<dl class="mt-5 grid grid-cols-2 gap-3">
 			<div class="rounded-card bg-ink/5 p-3">
-				<dt class="text-ink/60 text-xs">Accuracy</dt>
+				<dt class="text-xs text-ink/60">Accuracy</dt>
 				<dd class="text-2xl font-bold tabular-nums">{percent}%</dd>
 			</div>
 			<div class="rounded-card bg-ink/5 p-3">
-				<dt class="text-ink/60 text-xs">Best streak</dt>
+				<dt class="text-xs text-ink/60">Best streak</dt>
 				<dd class="text-2xl font-bold tabular-nums">{state.counters.bestStreak}</dd>
 			</div>
 		</dl>
@@ -3923,7 +3923,7 @@ Expected: FAIL, no `result-score`.
 			<h2 class="font-bold">Review what you missed</h2>
 			<ul class="grid grid-cols-2 gap-2">
 				{#each missed as letter (letter.char)}
-					<li class="rounded-card shadow-soft flex items-center gap-3 bg-white px-4 py-2">
+					<li class="flex items-center gap-3 rounded-card bg-white px-4 py-2 shadow-soft">
 						<span lang="ar" dir="rtl" class="font-arabic text-3xl leading-normal font-bold"
 							>{letter.char}</span
 						>
@@ -4057,7 +4057,7 @@ Expected: FAIL, no `result-score`.
 		<main class="flex flex-1 flex-col gap-4">
 			{#if s.phase === 'countdown' || s.resumeTo === 'countdown'}
 				<div class="grid flex-1 place-items-center">
-					<p class="text-crimson text-9xl font-bold tabular-nums">
+					<p class="text-9xl font-bold text-crimson tabular-nums">
 						{Math.ceil(s.countdownLeft / 1000)}
 					</p>
 				</div>
@@ -4075,15 +4075,15 @@ Expected: FAIL, no `result-score`.
 	{/if}
 
 	{#if s.phase === 'paused'}
-		<div class="bg-ink/40 fixed inset-0 z-10 grid place-items-center px-4 backdrop-blur-sm">
+		<div class="fixed inset-0 z-10 grid place-items-center bg-ink/40 px-4 backdrop-blur-sm">
 			<div
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="paused-title"
-				class="rounded-item shadow-item w-full max-w-sm bg-white p-6 text-center"
+				class="w-full max-w-sm rounded-item bg-white p-6 text-center shadow-item"
 			>
 				<h2 id="paused-title" class="text-2xl font-bold">Paused</h2>
-				<p class="text-ink/70 mt-1">The clock stops while you are away.</p>
+				<p class="mt-1 text-ink/70">The clock stops while you are away.</p>
 				<Button
 					class="mt-4 w-full"
 					onclick={() => runner?.resume()}
@@ -4397,7 +4397,7 @@ Expected: FAIL, no "Sound effects" switch.
 			role="switch"
 			aria-checked={sound}
 			onclick={() => store.setSound(!sound)}
-			class="rounded-card shadow-soft flex min-h-14 items-center justify-between bg-white px-4"
+			class="flex min-h-14 items-center justify-between rounded-card bg-white px-4 shadow-soft"
 		>
 			<span class="font-bold">Sound effects</span>
 			<span
@@ -4409,7 +4409,7 @@ Expected: FAIL, no "Sound effects" switch.
 			>
 				<span
 					class={[
-						'shadow-soft absolute top-1 size-6 rounded-full bg-white transition-all',
+						'absolute top-1 size-6 rounded-full bg-white shadow-soft transition-all',
 						sound ? 'left-7' : 'left-1'
 					]}
 				></span>
@@ -4441,7 +4441,7 @@ Expected: FAIL, no "Sound effects" switch.
 							oncancel={() => (deletingId = null)}
 						/>
 					{:else}
-						<div class="rounded-card shadow-soft flex items-center gap-2 bg-white py-1 pr-1 pl-4">
+						<div class="flex items-center gap-2 rounded-card bg-white py-1 pr-1 pl-4 shadow-soft">
 							<Avatar name={player.name} seed={player.id} size="sm" />
 							<span dir="auto" class="min-w-0 flex-1 truncate font-bold">{player.name}</span>
 							<Button
@@ -4475,7 +4475,7 @@ Expected: FAIL, no "Sound effects" switch.
 
 	<section class="flex flex-col gap-2">
 		<h2 class="font-bold">Data</h2>
-		<p class="text-ink/60 text-sm">Players and scores are saved only in this browser.</p>
+		<p class="text-sm text-ink/60">Players and scores are saved only in this browser.</p>
 		{#if confirmingReset}
 			<ConfirmPanel
 				message="Delete all players, scores and settings?"
