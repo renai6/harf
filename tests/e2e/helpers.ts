@@ -39,3 +39,12 @@ export async function setHidden(page: Page, hidden: boolean) {
 		document.dispatchEvent(new Event('visibilitychange'));
 	}, hidden);
 }
+
+/**
+ * Installs a paused fake clock, so sprint time only moves when the test moves it.
+ * Use `fastForward` for exact jumps; frame-stepping `runFor` stops a few milliseconds short.
+ */
+export async function pauseClock(page: Page) {
+	await page.clock.install({ time: new Date('2026-09-14T09:00:00') });
+	await page.clock.pauseAt(new Date('2026-09-14T09:00:01'));
+}

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { answer, answerButtons, createPlayer, setHidden } from './helpers';
+import { answer, answerButtons, createPlayer, pauseClock, setHidden } from './helpers';
 
 test.beforeEach(async ({ page }) => {
-	await page.clock.install();
+	await pauseClock(page);
 });
 
 test('redirects without a player or with an invalid setup', async ({ page }) => {
@@ -19,7 +19,7 @@ test('counts down, scores correct answers, locks out wrong ones and ends', async
 	await page.getByRole('button', { name: 'Start' }).click();
 
 	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.runFor(3_000);
+	await page.clock.fastForward(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);
 	await expect(page.getByTestId('sprint-time')).toHaveText('60s');
 
@@ -29,7 +29,7 @@ test('counts down, scores correct answers, locks out wrong ones and ends', async
 
 	await answer(page, false);
 	await expect(answerButtons(page).first()).toBeDisabled();
-	await page.clock.runFor(1_500);
+	await page.clock.fastForward(1_500);
 	await expect(answerButtons(page).first()).toBeEnabled();
 	await expect(page.getByTestId('sprint-score')).toHaveText('Score 2');
 
@@ -40,20 +40,55 @@ test('counts down, scores correct answers, locks out wrong ones and ends', async
 test('pauses while the page is hidden and resumes on Continue', async ({ page }) => {
 	await createPlayer(page, 'Sara');
 	await page.getByRole('button', { name: 'Start' }).click();
-	await page.clock.runFor(3_000);
+	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);
+	const time = page.getByTestId('sprint-time');
+	await expect(time).toHaveText('60s');
 
 	await setHidden(page, true);
 	const dialog = page.getByRole('dialog', { name: 'Paused' });
 	await expect(dialog).toBeVisible();
-	const time = page.getByTestId('sprint-time');
-	const frozen = (await time.textContent()) ?? '';
-	await page.clock.runFor(20_000);
-	await expect(time).toHaveText(frozen);
+	await page.clock.fastForward(20_000);
+	await expect(time).toHaveText('60s');
 
 	await setHidden(page, false);
 	await dialog.getByRole('button', { name: 'Continue' }).click();
 	await expect(dialog).toBeHidden();
-	await page.clock.runFor(2_000);
-	await expect(time).not.toHaveText(frozen);
+	// Only the time after Continue counts: 2 s, not the 20 s spent paused.
+	await page.clock.fastForward(2_000);
+	await expect(time).toHaveText('58s');
+});
+
+test('starts a sprint from a direct /play link and starts afresh after a reload', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		const player = { id: 'p1', name: 'Sara', createdAt: '2026-09-14T08:00:00.000Z' };
+		const data = {
+			version: 1,
+			players: [player],
+			lastPlayerId: player.id,
+			runs: [],
+			bests: {},
+			settings: { sound: false }
+		};
+		localStorage.setItem('harf-sprint:v1', JSON.stringify(data));
+	});
+	const url = '/play?mode=letters&level=fast&variant=forms';
+	await page.goto(url);
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
+	await expect(answerButtons(page)).toHaveCount(4);
+	await answer(page, true);
+	await expect(page.getByTestId('sprint-score')).toHaveText('Score 1');
+
+	await page.reload();
+	await expect(page).toHaveURL(url);
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await expect(page.getByTestId('sprint-score')).toHaveText('Score 0');
+	await page.clock.fastForward(3_000);
+	await expect(answerButtons(page)).toHaveCount(4);
+	await expect(page.getByTestId('sprint-time')).toHaveText('60s');
 });

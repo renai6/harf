@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { answer, answerButtons, createPlayer } from './helpers';
+import { answer, answerButtons, createPlayer, pauseClock } from './helpers';
 
 const VIEWPORTS = [
 	{ name: 'phone', width: 390, height: 844 },
@@ -38,8 +38,7 @@ for (const viewport of VIEWPORTS) {
 		test.beforeEach(async ({ page }) => {
 			await page.emulateMedia({ reducedMotion: 'reduce' });
 			// A paused clock keeps timed states such as the wrong-answer reveal on screen while capturing.
-			await page.clock.install({ time: new Date('2026-09-14T09:00:00') });
-			await page.clock.pauseAt(new Date('2026-09-14T09:00:01'));
+			await pauseClock(page);
 		});
 
 		test('every screen fits and is captured', async ({ page }) => {
@@ -92,18 +91,22 @@ for (const viewport of VIEWPORTS) {
 
 		test('keyboard focus shows a purple ring on the setup screen', async ({ page }) => {
 			await createPlayer(page, 'Sara');
+			// A full load starts keyboard focus at the top; after a client-side navigation SvelteKit resets focus later.
+			await page.goto('/modes');
 			const targets = [
 				page.getByRole('link', { name: 'Switch player' }),
 				page.getByRole('button', { name: 'Letters' }),
 				page.getByRole('button', { name: 'Relaxed' }),
+				page.getByRole('button', { name: 'Normal' }),
+				page.getByRole('button', { name: 'Fast' }),
+				page.getByRole('button', { name: 'Isolated' }),
 				page.getByRole('button', { name: 'All forms' }),
 				page.getByRole('button', { name: 'Start' })
 			];
+			await expect(targets[targets.length - 1]).toBeVisible();
 			for (const [index, target] of targets.entries()) {
-				await expect(async () => {
-					await page.keyboard.press('Tab');
-					await expect(target).toBeFocused({ timeout: 100 });
-				}).toPass();
+				await page.keyboard.press('Tab');
+				await expect(target).toBeFocused();
 				await expect(target).toHaveCSS('outline', 'rgb(123, 63, 178) solid 3px');
 				await page.screenshot({
 					path: `test-results/screens/${viewport.name}-focus-${index + 1}.png`,

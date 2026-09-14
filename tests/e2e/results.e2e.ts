@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { answer, answerButtons, createPlayer } from './helpers';
+import { answer, answerButtons, createPlayer, pauseClock } from './helpers';
 
 test.beforeEach(async ({ page }) => {
-	await page.clock.install();
+	await pauseClock(page);
 });
 
 test('shows results, saves the run, restarts with Again and persists the best', async ({
@@ -11,7 +11,9 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await createPlayer(page, 'Sara');
 	await page.getByRole('button', { name: 'Relaxed' }).click();
 	await page.getByRole('button', { name: 'Start' }).click();
-	await page.clock.runFor(3_000);
+	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);
 	await answer(page, true);
 	await answer(page, true);
@@ -27,7 +29,8 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await expect(page.getByRole('heading', { name: 'Review what you missed' })).toBeVisible();
 
 	await page.getByRole('button', { name: 'Again' }).click();
-	await page.clock.runFor(3_000);
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);
 	await answer(page, false);
 	await page.clock.fastForward(61_000);
@@ -35,6 +38,8 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await expect(page.getByText('New personal best')).toBeHidden();
 
 	await page.getByRole('link', { name: 'Home' }).click();
+	// SvelteKit lets the browser paint before a link navigation, waiting at most a 100 ms timer.
+	await page.clock.runFor(100);
 	await expect(page.getByRole('button', { name: /Sara/ })).toContainText('Best 3');
 	await page.reload();
 	await expect(page.getByRole('button', { name: /Sara/ })).toContainText('Best 3');
