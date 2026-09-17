@@ -200,7 +200,7 @@ export const QURAN_PACK: Pack = {
 			id: 'q-quraysh-1',
 			text: 'لِإِيلَافِ قُرَيْشٍ',
 			translit: 'li-iilaafi quraysh',
-			meaning: 'For the familiarity of Quraysh',
+			meaning: 'For the accustomed journeys of Quraysh',
 			source: '106:1'
 		},
 		{
