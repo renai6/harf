@@ -34,6 +34,16 @@ describe('packs', () => {
 	it('give every Quranic sentence a surah:ayah source', () => {
 		for (const sentence of PACKS.quran.sentences) {
 			expect(sentence.source, sentence.id).toMatch(/^\d{1,3}:\d{1,3}$/);
+			const [surah, ayah] = sentence.source!.split(':').map(Number);
+			expect(surah, sentence.id).toBeGreaterThanOrEqual(1);
+			expect(surah, sentence.id).toBeLessThanOrEqual(114);
+			expect(ayah, sentence.id).toBeGreaterThanOrEqual(1);
+		}
+	});
+
+	it('gives no MSA sentence a source', () => {
+		for (const sentence of PACKS.msa.sentences) {
+			expect(sentence.source, sentence.id).toBeUndefined();
 		}
 	});
 });

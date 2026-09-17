@@ -12,6 +12,13 @@ export const SENTENCE_THRESHOLD = 0.8;
  */
 const TAIL_SLACK = 2;
 
+/**
+ * Matches expected text against a transcript window per spec 8.7. Callers must pass only
+ * the transcript for the current item, taken from the listener's `markItemBoundary()` onward.
+ * `TAIL_SLACK` exists solely to absorb Chrome's one-result overlap, where a new answer is
+ * appended to the previous item's still-open result; it is not licence to pass the whole
+ * session transcript, since a previous item's leftover words would then help pay for a short sentence.
+ */
 export function matchTranscript(
 	expected: string,
 	transcript: string,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchTranscript, wordCount } from './match';
+import { matchTranscript, SENTENCE_THRESHOLD, wordCount } from './match';
 
 describe('matchTranscript: words', () => {
 	it('matches a plain transcript of a vowelled word', () => {
@@ -24,6 +24,11 @@ describe('matchTranscript: words', () => {
 
 	it('does not match a similar but different word', () => {
 		expect(matchTranscript('قَلَم', 'علم', 'word').matched).toBe(false);
+	});
+
+	it('takes the tail letter of a merged recognizer result, not an earlier one (spec 11.1)', () => {
+		expect(matchTranscript('ص', 'شن ص', 'word').matched).toBe(true);
+		expect(matchTranscript('ش', 'شن ص', 'word').matched).toBe(false);
 	});
 });
 
@@ -65,6 +70,15 @@ describe('matchTranscript: sentences', () => {
 
 	it('counts a repeated expected word only as often as it was heard', () => {
 		expect(matchTranscript('لَا لَا', 'لا', 'sentence')).toEqual({ matched: false, ratio: 0.5 });
+	});
+
+	it('pins the sentence threshold at 0.8 and matches a 6-word sentence at 5 of 6 words', () => {
+		expect(SENTENCE_THRESHOLD).toBe(0.8);
+		const sentence = 'لَيْلَةُ الْقَدْرِ خَيْرٌ مِنْ أَلْفِ شَهْرٍ';
+		expect(matchTranscript(sentence, 'ليله القدر خير الف شهر', 'sentence')).toEqual({
+			matched: true,
+			ratio: 5 / 6
+		});
 	});
 });
 
