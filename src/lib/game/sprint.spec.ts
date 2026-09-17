@@ -12,7 +12,9 @@ import {
 	type SprintState
 } from './sprint';
 
-const config = (overrides: Partial<SprintConfig> = {}): SprintConfig => ({
+type LettersConfig = Extract<SprintConfig, { mode: 'letters' }>;
+
+const config = (overrides: Partial<LettersConfig> = {}): LettersConfig => ({
 	mode: 'letters',
 	level: 'normal',
 	variant: 'isolated',
@@ -23,18 +25,24 @@ const config = (overrides: Partial<SprintConfig> = {}): SprintConfig => ({
 const tick = (s: SprintState, now: number) => reduce(s, { type: 'tick', now });
 const answer = (s: SprintState, choice: string, now: number) =>
 	reduce(s, { type: 'answer', choice, now });
-const wrongChoice = (s: SprintState) => s.prompt.choices.find((c) => c !== s.prompt.id)!;
+
+/** The current prompt as a letter prompt; these tests only run letters sprints. */
+const letterOf = (s: SprintState) => {
+	if (s.prompt.kind !== 'letter') throw new Error('Expected a letter prompt');
+	return s.prompt;
+};
+const wrongChoice = (s: SprintState) => letterOf(s).choices.find((c) => c !== s.prompt.id)!;
 
 /** A sprint that just left the countdown at now = 3000 (normal level: 3000 ms per letter). */
-const activeSprint = (overrides: Partial<SprintConfig> = {}) =>
+const activeSprint = (overrides: Partial<LettersConfig> = {}) =>
 	tick(createSprint(config(overrides), 0), COUNTDOWN_MS);
 
 describe('countdown', () => {
 	it('starts with a 3 s countdown and a ready prompt', () => {
 		const s = createSprint(config(), 0);
 		expect(s.phase).toBe('countdown');
-		expect(s.prompt.choices).toHaveLength(4);
-		expect(s.prompt.choices).toContain(s.prompt.id);
+		expect(letterOf(s).choices).toHaveLength(4);
+		expect(letterOf(s).choices).toContain(s.prompt.id);
 		expect(tick(s, 2_999)).toMatchObject({ phase: 'countdown', countdownLeft: 1 });
 		expect(tick(s, 3_000)).toMatchObject({ phase: 'active', sprintLeft: 60_000, itemLeft: 3_000 });
 	});
@@ -178,16 +186,16 @@ describe('letter forms', () => {
 		let s = activeSprint({ variant: 'forms', rng: mulberry32(9) });
 		for (let i = 1; i <= 200; i++) {
 			const letter = letterByChar(s.prompt.id);
-			expect(formsFor(letter)).toContain(s.prompt.form);
-			expect(s.prompt.display).toBe(renderForm(letter.char, s.prompt.form));
-			seen.add(s.prompt.form);
+			expect(formsFor(letter)).toContain(letterOf(s).form);
+			expect(s.prompt.display).toBe(renderForm(letter.char, letterOf(s).form));
+			seen.add(letterOf(s).form);
 			s = answer(s, s.prompt.id, COUNTDOWN_MS + i * 100);
 		}
 		expect(seen.size).toBe(4);
 
 		let iso = activeSprint();
 		for (let i = 1; i <= 50; i++) {
-			expect(iso.prompt.form).toBe('isolated');
+			expect(letterOf(iso).form).toBe('isolated');
 			iso = answer(iso, iso.prompt.id, COUNTDOWN_MS + i * 100);
 		}
 	});

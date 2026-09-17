@@ -120,12 +120,14 @@
 			{:else}
 				<TimerBar fraction={s.itemLeft / itemLimit(s.config)} label="Time left for this letter" />
 				<ItemCard text={s.prompt.display} {flash} />
-				<AnswerGrid
-					choices={s.prompt.choices}
-					reveal={s.reveal}
-					disabled={s.phase !== 'active'}
-					onanswer={(choice) => runner?.answer(choice)}
-				/>
+				{#if s.prompt.kind === 'letter'}
+					<AnswerGrid
+						choices={s.prompt.choices}
+						reveal={s.reveal}
+						disabled={s.phase !== 'active'}
+						onanswer={(choice) => runner?.answer(choice)}
+					/>
+				{/if}
 			{/if}
 		</main>
 	{/if}

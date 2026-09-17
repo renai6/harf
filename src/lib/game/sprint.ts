@@ -1,28 +1,33 @@
-import { LETTER_CHARS, letterByChar } from '$lib/content/letters';
+import { LETTER_CHARS } from '$lib/content/letters';
 import { draw, newDeck, type Deck } from './deck';
-import { buildChoices } from './distractors';
-import { formsFor, renderForm, type Form } from './forms';
 import {
 	COUNTDOWN_MS,
 	ITEM_LIMIT_MS,
 	LOCKOUT_MS,
 	SPRINT_MS,
 	type Level,
-	type LetterVariant
+	type LetterVariant,
+	type PackVariant
 } from './levels';
-import { pick, type Rng } from './rng';
+import { letterPrompt, textItems, textPrompt, type Prompt, type TextMode } from './prompts';
+import type { Rng } from './rng';
 import { ZERO_COUNTERS, recordCorrect, recordMiss, type Counters } from './scoring';
 
-export type SprintConfig = { mode: 'letters'; level: Level; variant: LetterVariant; rng: Rng };
+export type { LetterPrompt, Prompt, TextPrompt } from './prompts';
 
-export type LetterPrompt = {
-	/** The letter character; also the correct choice. */
-	id: string;
-	form: Form;
-	/** Text to render, including zero-width joiners for positional forms. */
-	display: string;
-	choices: readonly string[];
-};
+export type SprintConfig =
+	| { mode: 'letters'; level: Level; variant: LetterVariant; rng: Rng }
+	| {
+			mode: TextMode;
+			level: Level;
+			variant: PackVariant;
+			rng: Rng;
+			/** Unranked practice: the player reports each item with buttons instead of speaking (spec 5.6). */
+			practice: boolean;
+	  };
+
+/** How the player answers: letter choices, speech, or the Got it and Missed buttons. */
+export type SprintInput = 'choices' | 'speech' | 'selfReport';
 
 export type SprintPhase = 'countdown' | 'active' | 'lockout' | 'paused' | 'finished';
 type RunningPhase = 'countdown' | 'active' | 'lockout';
@@ -38,8 +43,11 @@ export type SprintState = {
 	readonly sprintLeft: number;
 	readonly itemLeft: number;
 	readonly lockoutLeft: number;
+	readonly input: SprintInput;
+	/** False for practice and after speech stops mid-sprint; unranked runs are never saved. */
+	readonly ranked: boolean;
 	readonly deck: Deck<string>;
-	readonly prompt: LetterPrompt;
+	readonly prompt: Prompt;
 	readonly reveal: Reveal | null;
 	readonly counters: Counters;
 	readonly score: number;
@@ -49,35 +57,37 @@ export type SprintState = {
 export type SprintEvent =
 	| { type: 'tick'; now: number }
 	| { type: 'answer'; choice: string; now: number }
+	| { type: 'matched'; now: number }
+	| { type: 'skip'; now: number }
+	| { type: 'selfReport'; correct: boolean; now: number }
+	| { type: 'speechLost'; now: number }
 	| { type: 'pause'; now: number }
 	| { type: 'resume'; now: number };
 
-export type Outcome = 'correct' | 'wrong' | 'timeout' | 'finished';
+export type Outcome = 'correct' | 'wrong' | 'timeout' | 'skip' | 'finished';
 
 export function itemLimit(config: SprintConfig): number {
 	return ITEM_LIMIT_MS[config.mode][config.level];
 }
 
-function deal(
-	deck: Deck<string>,
-	config: SprintConfig
-): { deck: Deck<string>; prompt: LetterPrompt } {
+function deckItems(config: SprintConfig): readonly string[] {
+	return config.mode === 'letters'
+		? LETTER_CHARS
+		: textItems(config.mode, config.variant).map((item) => item.id);
+}
+
+function deal(deck: Deck<string>, config: SprintConfig): { deck: Deck<string>; prompt: Prompt } {
 	const drawn = draw(deck, config.rng);
-	const letter = letterByChar(drawn.item);
-	const form = config.variant === 'forms' ? pick(formsFor(letter), config.rng) : 'isolated';
-	return {
-		deck: drawn.deck,
-		prompt: {
-			id: letter.char,
-			form,
-			display: renderForm(letter.char, form),
-			choices: buildChoices(letter.char, LETTER_CHARS, config.rng)
-		}
-	};
+	const prompt =
+		config.mode === 'letters'
+			? letterPrompt(drawn.item, config.variant, config.rng)
+			: textPrompt(config.mode, config.variant, drawn.item);
+	return { deck: drawn.deck, prompt };
 }
 
 export function createSprint(config: SprintConfig, now: number): SprintState {
-	const { deck, prompt } = deal(newDeck(LETTER_CHARS, config.rng), config);
+	const { deck, prompt } = deal(newDeck(deckItems(config), config.rng), config);
+	const practice = config.mode !== 'letters' && config.practice;
 	return {
 		config,
 		phase: 'countdown',
@@ -87,6 +97,8 @@ export function createSprint(config: SprintConfig, now: number): SprintState {
 		sprintLeft: SPRINT_MS,
 		itemLeft: itemLimit(config),
 		lockoutLeft: 0,
+		input: config.mode === 'letters' ? 'choices' : practice ? 'selfReport' : 'speech',
+		ranked: !practice,
 		deck,
 		prompt,
 		reveal: null,
@@ -109,16 +121,48 @@ function nextItem(state: SprintState): SprintState {
 	};
 }
 
-function miss(state: SprintState, kind: 'wrong' | 'timeouts', chosen: string | null): SprintState {
-	const id = state.prompt.id;
+function withMissed(missed: readonly string[], id: string): readonly string[] {
+	return missed.includes(id) ? missed : [...missed, id];
+}
+
+function scoreAndNext(state: SprintState): SprintState {
+	const points = state.prompt.kind === 'text' ? state.prompt.points : 1;
+	return nextItem({
+		...state,
+		score: state.score + points,
+		counters: recordCorrect(state.counters)
+	});
+}
+
+/** Letters reveal the answer and lock out for 1.5 s (spec 5.3). */
+function lockoutMiss(
+	state: SprintState,
+	kind: 'wrong' | 'timeouts',
+	chosen: string | null
+): SprintState {
 	return {
 		...state,
 		phase: 'lockout',
 		lockoutLeft: LOCKOUT_MS,
-		reveal: { chosen, correct: id },
+		reveal: { chosen, correct: state.prompt.id },
 		counters: recordMiss(state.counters, kind),
-		missed: state.missed.includes(id) ? state.missed : [...state.missed, id]
+		missed: withMissed(state.missed, state.prompt.id)
 	};
+}
+
+/** Words and sentences never lock out: a miss moves straight to the next item (spec 5.4). */
+function moveOnMiss(state: SprintState, kind: 'wrong' | 'timeouts' | 'skips'): SprintState {
+	return nextItem({
+		...state,
+		counters: recordMiss(state.counters, kind),
+		missed: withMissed(state.missed, state.prompt.id)
+	});
+}
+
+function timeout(state: SprintState): SprintState {
+	return state.prompt.kind === 'letter'
+		? lockoutMiss(state, 'timeouts', null)
+		: moveOnMiss(state, 'timeouts');
 }
 
 /** Moves the clocks forward to `now`, applying every transition that happens on the way. */
@@ -136,7 +180,7 @@ function advance(state: SprintState, now: number): SprintState {
 			dt -= step;
 			s = { ...s, sprintLeft: s.sprintLeft - step, itemLeft: s.itemLeft - step };
 			if (s.sprintLeft === 0) s = { ...s, phase: 'finished' };
-			else if (s.itemLeft === 0) s = miss(s, 'timeouts', null);
+			else if (s.itemLeft === 0) s = timeout(s);
 		} else if (s.phase === 'lockout') {
 			const step = Math.min(dt, s.sprintLeft, s.lockoutLeft);
 			dt -= step;
@@ -158,9 +202,26 @@ export function reduce(state: SprintState, event: SprintEvent): SprintState {
 			return state.phase === 'paused' ? state : advance(state, event.now);
 		case 'answer': {
 			const s = advance(state, event.now);
-			if (s.phase !== 'active') return s;
-			if (event.choice !== s.prompt.id) return miss(s, 'wrong', event.choice);
-			return nextItem({ ...s, score: s.score + 1, counters: recordCorrect(s.counters) });
+			if (s.phase !== 'active' || s.prompt.kind !== 'letter') return s;
+			return event.choice === s.prompt.id ? scoreAndNext(s) : lockoutMiss(s, 'wrong', event.choice);
+		}
+		case 'matched': {
+			const s = advance(state, event.now);
+			return s.phase === 'active' && s.input === 'speech' ? scoreAndNext(s) : s;
+		}
+		case 'skip': {
+			const s = advance(state, event.now);
+			return s.phase === 'active' && s.prompt.kind === 'text' ? moveOnMiss(s, 'skips') : s;
+		}
+		case 'selfReport': {
+			const s = advance(state, event.now);
+			if (s.phase !== 'active' || s.input !== 'selfReport') return s;
+			return event.correct ? scoreAndNext(s) : moveOnMiss(s, 'wrong');
+		}
+		case 'speechLost': {
+			const s = advance(state, event.now);
+			if (s.phase === 'finished' || s.input !== 'speech') return s;
+			return { ...s, input: 'selfReport', ranked: false };
 		}
 		case 'pause': {
 			const s = advance(state, event.now);
@@ -178,5 +239,6 @@ export function outcomeBetween(prev: SprintState, next: SprintState): Outcome | 
 	if (next.counters.correct > prev.counters.correct) return 'correct';
 	if (next.counters.wrong > prev.counters.wrong) return 'wrong';
 	if (next.counters.timeouts > prev.counters.timeouts) return 'timeout';
+	if (next.counters.skips > prev.counters.skips) return 'skip';
 	return null;
 }
