@@ -26,6 +26,7 @@ function seedData() {
 			'letters:normal:isolated': Object.fromEntries(
 				players.map((p, i) => [p.id, run(p.id, 40 - i, 'letters:normal:isolated')])
 			),
+			'words:normal:quran': { p0: run('p0', 12, 'words:normal:quran') },
 			'letters:fast:forms': { p3: run('p3', 17, 'letters:fast:forms') }
 		},
 		settings: { sound: false }
@@ -39,7 +40,6 @@ test('shows the top 10 per board with the current player highlighted', async ({ 
 	await page.goto('/leaderboard');
 
 	await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Words' })).toBeDisabled();
 
 	const board = page.getByRole('list', { name: 'Leaderboard' });
 	const rows = board.getByRole('listitem');
@@ -55,4 +55,13 @@ test('shows the top 10 per board with the current player highlighted', async ({ 
 	await page.getByRole('button', { name: 'All forms' }).click();
 	await expect(rows).toHaveCount(1);
 	await expect(rows.first()).toContainText('Player 4');
+
+	await page.getByRole('button', { name: 'Words' }).click();
+	await page.getByRole('button', { name: 'Normal' }).click();
+	await expect(page.getByRole('group', { name: 'Content' })).toBeVisible();
+	await expect(rows).toHaveCount(1);
+	await expect(rows.first()).toContainText('Player 1');
+	await expect(rows.first()).toContainText('12');
+	await page.getByRole('button', { name: 'Modern Standard' }).click();
+	await expect(page.getByText('No scores yet. Be the first!')).toBeVisible();
 });

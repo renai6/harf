@@ -36,6 +36,13 @@
 	let listening = $state(false);
 	let heard = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
+	let panel: HTMLElement | undefined;
+
+	$effect(() => {
+		// The panel takes the place of Start at the bottom of the page and every state has its own
+		// height, so each state scrolls itself into view instead of hanging below the fold on a phone.
+		if (status) panel?.scrollIntoView({ block: 'end' });
+	});
 
 	function end() {
 		clearTimeout(timer);
@@ -76,8 +83,9 @@
 </script>
 
 <section
+	bind:this={panel}
 	aria-labelledby="{id}-title"
-	class="flex flex-col gap-3 rounded-card bg-white p-4 shadow-soft"
+	class="flex scroll-mb-10 flex-col gap-3 rounded-card bg-white p-4 shadow-soft"
 >
 	<h2 id="{id}-title" class="font-bold">Microphone check</h2>
 
