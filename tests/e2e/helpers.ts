@@ -48,3 +48,30 @@ export async function pauseClock(page: Page) {
 	await page.clock.install({ time: new Date('2026-09-14T09:00:00') });
 	await page.clock.pauseAt(new Date('2026-09-14T09:00:01'));
 }
+
+/** Seeds one current player before each page load, without overwriting data saved by earlier navigations. */
+export async function seedPlayer(page: Page, name = 'Sara') {
+	await page.addInitScript((playerName) => {
+		if (localStorage.getItem('harf-sprint:v1') !== null) return;
+		const player = { id: 'p1', name: playerName, createdAt: '2026-09-14T08:00:00.000Z' };
+		localStorage.setItem(
+			'harf-sprint:v1',
+			JSON.stringify({
+				version: 1,
+				players: [player],
+				lastPlayerId: player.id,
+				runs: [],
+				bests: {},
+				settings: { sound: false }
+			})
+		);
+	}, name);
+}
+
+/** Number of runs saved in localStorage. */
+export async function savedRuns(page: Page) {
+	return page.evaluate(() => {
+		const raw = localStorage.getItem('harf-sprint:v1');
+		return raw === null ? 0 : (JSON.parse(raw) as { runs: unknown[] }).runs.length;
+	});
+}

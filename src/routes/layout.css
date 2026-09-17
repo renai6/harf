@@ -66,6 +66,18 @@
 	}
 }
 
+@keyframes mic-pulse {
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.45;
+		transform: scale(0.8);
+	}
+}
+
 .item-pop {
 	animation: item-pop 150ms ease-out;
 }
@@ -74,9 +86,14 @@
 	animation: shake 300ms ease-in-out;
 }
 
+.mic-pulse {
+	animation: mic-pulse 1.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.item-pop,
-	.shake {
+	.shake,
+	.mic-pulse {
 		animation: none;
 	}
 }
