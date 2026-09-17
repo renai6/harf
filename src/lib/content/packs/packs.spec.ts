@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LETTER_CHARS } from '$lib/content/letters';
 import { matchTranscript, wordCount } from '$lib/speech/match';
 import { normalizeArabic } from '$lib/speech/normalize';
 import { PACKS } from './index';
@@ -47,6 +48,19 @@ for (const pack of packs) {
 		it('has at least 2 words and 2 sentences, so a deck never repeats an item back to back', () => {
 			expect(pack.words.length).toBeGreaterThanOrEqual(2);
 			expect(pack.sentences.length).toBeGreaterThanOrEqual(2);
+		});
+
+		it('has about 80 words and 25 sentences', () => {
+			expect(pack.words.length).toBeGreaterThanOrEqual(70);
+			expect(pack.words.length).toBeLessThanOrEqual(90);
+			expect(pack.sentences.length).toBeGreaterThanOrEqual(20);
+			expect(pack.sentences.length).toBeLessThanOrEqual(30);
+		});
+
+		it('covers at least 24 of the 28 letters across its words', () => {
+			const used = new Set([...pack.words.map((word) => normalizeArabic(word.text)).join('')]);
+			const covered = LETTER_CHARS.filter((char) => used.has(char));
+			expect(covered.length).toBeGreaterThanOrEqual(24);
 		});
 
 		it('is fully vowelled standard Arabic', () => {
