@@ -88,6 +88,7 @@ export function createWebSpeechListener(
 		r.interimResults = true;
 		r.maxAlternatives = 5;
 		r.onstart = () => {
+			if (recognition !== r) return;
 			resultCount = 0;
 			boundary = 0;
 		};

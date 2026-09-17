@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { createPlayer, pauseClock } from './helpers';
-import { installFakeSpeech, say } from './speech';
+import { failSpeech, installFakeSpeech, say, speechState } from './speech';
 
 const micCheck = (page: Page) => page.getByRole('region', { name: 'Microphone check' });
+const focusedInMicCheck = (page: Page) => micCheck(page).locator(':focus');
 
 test('a passed mic check starts the speech sprint and is not asked again this session', async ({
 	page
@@ -23,6 +24,7 @@ test('a passed mic check starts the speech sprint and is not asked again this se
 
 	await page.getByRole('link', { name: 'Quit' }).click();
 	await expect(page).toHaveURL('/modes');
+	expect((await speechState(page)).active).toBe(false);
 	await page.getByRole('button', { name: /Sentences/ }).click();
 	await page.getByRole('button', { name: 'Start' }).click();
 	await expect(page).toHaveURL('/play?mode=sentences&level=normal&variant=quran');
@@ -75,4 +77,22 @@ test('Cancel closes the mic check', async ({ page }) => {
 	await micCheck(page).getByRole('button', { name: 'Cancel' }).click();
 	await expect(micCheck(page)).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
+});
+
+test('keyboard focus stays inside the mic check panel through every state', async ({ page }) => {
+	await installFakeSpeech(page);
+	await createPlayer(page, 'Sara');
+	await page.getByRole('button', { name: /Words/ }).click();
+	await page.getByRole('button', { name: 'Start' }).click();
+
+	// The intro panel replaces Start, so focus must not fall back to <body>.
+	await expect(focusedInMicCheck(page)).toHaveCount(1);
+
+	await micCheck(page).getByRole('button', { name: 'Start check' }).click();
+	await expect(micCheck(page).getByTestId('mic')).toContainText('Listening');
+	await expect(focusedInMicCheck(page)).toHaveCount(1);
+
+	await failSpeech(page, 'other');
+	await expect(micCheck(page).getByRole('alert')).toContainText('stopped unexpectedly');
+	await expect(focusedInMicCheck(page)).toHaveCount(1);
 });

@@ -4,20 +4,18 @@
 		title: string;
 		subtitle?: string;
 		selected: boolean;
-		disabled?: boolean;
 		onclick?: () => void;
 	};
 
-	let { arabic, title, subtitle, selected, disabled = false, onclick }: Props = $props();
+	let { arabic, title, subtitle, selected, onclick }: Props = $props();
 </script>
 
 <button
 	type="button"
 	aria-pressed={selected}
-	{disabled}
 	{onclick}
 	class={[
-		'flex min-h-28 flex-col items-center justify-center gap-1 rounded-card p-3 text-center transition active:translate-y-px disabled:opacity-50',
+		'flex min-h-28 flex-col items-center justify-center gap-1 rounded-card p-3 text-center transition active:translate-y-px',
 		selected
 			? 'bg-linear-to-br from-purple-light to-purple text-white shadow-purple'
 			: 'bg-white text-ink shadow-soft'

@@ -37,11 +37,17 @@
 	let heard = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let panel: HTMLElement | undefined;
+	let heading: HTMLElement | undefined;
 
 	$effect(() => {
 		// The panel takes the place of Start at the bottom of the page and every state has its own
 		// height, so each state scrolls itself into view instead of hanging below the fold on a phone.
-		if (status) panel?.scrollIntoView({ block: 'end' });
+		// Every state also swaps out the element that had focus (Start, Start check, Try again, ...),
+		// so focus moves to the heading here too, or it would fall back to <body>.
+		if (status) {
+			panel?.scrollIntoView({ block: 'end' });
+			heading?.focus({ preventScroll: true });
+		}
 	});
 
 	function end() {
@@ -87,7 +93,7 @@
 	aria-labelledby="{id}-title"
 	class="flex scroll-mb-10 flex-col gap-3 rounded-card bg-white p-4 shadow-soft"
 >
-	<h2 id="{id}-title" class="font-bold">Microphone check</h2>
+	<h2 id="{id}-title" bind:this={heading} tabindex="-1" class="font-bold">Microphone check</h2>
 
 	{#if status === 'intro'}
 		<p>
