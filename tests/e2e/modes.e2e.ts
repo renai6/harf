@@ -10,8 +10,8 @@ test('sets up a letters sprint', async ({ page }) => {
 	await createPlayer(page, 'Sara');
 	await expect(page.getByRole('heading', { name: 'Pick a sprint' })).toBeVisible();
 	await expect(page.getByText('Playing as')).toBeVisible();
-	await expect(page.getByRole('button', { name: /Words/ })).toBeDisabled();
-	await expect(page.getByRole('button', { name: /Sentences/ })).toBeDisabled();
+	await expect(page.getByRole('button', { name: /Words/ })).toBeEnabled();
+	await expect(page.getByRole('button', { name: /Sentences/ })).toBeEnabled();
 	await expect(page.getByText('3 seconds per letter')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Fast' }).click();

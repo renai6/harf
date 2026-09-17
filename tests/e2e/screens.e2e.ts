@@ -95,7 +95,9 @@ for (const viewport of VIEWPORTS) {
 			await page.goto('/modes');
 			const targets = [
 				page.getByRole('link', { name: 'Switch player' }),
-				page.getByRole('button', { name: 'Letters' }),
+				page.getByRole('button', { name: /Letters/ }),
+				page.getByRole('button', { name: /Words/ }),
+				page.getByRole('button', { name: /Sentences/ }),
 				page.getByRole('button', { name: 'Relaxed' }),
 				page.getByRole('button', { name: 'Normal' }),
 				page.getByRole('button', { name: 'Fast' }),
