@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { letterByChar } from '$lib/content/letters';
+	import { reviewItems } from '$lib/game/review';
 	import { accuracy, attempts } from '$lib/game/scoring';
 	import type { SprintState } from '$lib/game/sprint';
 	import type { BoardRow } from '$lib/storage/boards';
@@ -23,7 +23,8 @@
 	const percent = $derived(
 		Math.round(accuracy(state.counters.correct, attempts(state.counters)) * 100)
 	);
-	const missed = $derived(state.missed.map(letterByChar));
+	const review = $derived(reviewItems(state.config, state.missed));
+	const letters = $derived(state.config.mode === 'letters');
 </script>
 
 <main class="flex flex-1 flex-col gap-6">
@@ -33,7 +34,9 @@
 			{state.score}
 		</p>
 		<p class="text-sm text-ink/75">{state.score === 1 ? 'point' : 'points'}</p>
-		{#if save?.saved && save.personalBest}
+		{#if !state.ranked}
+			<div class="mt-3"><Chip>Practice - not ranked</Chip></div>
+		{:else if save?.saved && save.personalBest}
 			<div class="mt-3"><Chip tone="purple">New personal best</Chip></div>
 		{:else if save && !save.saved}
 			<p class="mt-3 text-sm font-bold text-crimson-deep">This run could not be saved.</p>
@@ -50,28 +53,42 @@
 		</dl>
 	</section>
 
-	<section class="flex flex-col gap-2">
-		<h2 class="font-bold">Top 3</h2>
-		<LeaderboardTable {rows} {currentPlayerId} limit={3} />
-	</section>
+	{#if state.ranked}
+		<section class="flex flex-col gap-2">
+			<h2 class="font-bold">Top 3</h2>
+			<LeaderboardTable {rows} {currentPlayerId} limit={3} />
+		</section>
+	{/if}
 
-	{#if missed.length > 0}
+	{#if review.length > 0}
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Review what you missed</h2>
-			<ul class="grid grid-cols-2 gap-2">
-				{#each missed as letter (letter.char)}
-					<li class="flex items-center gap-3 rounded-card bg-white px-4 py-2 shadow-soft">
-						<span
-							lang="ar"
-							dir="rtl"
-							class="w-9 shrink-0 text-center font-arabic text-3xl leading-normal font-bold"
-							>{letter.char}</span
-						>
-						<span class="flex min-w-0 flex-col items-start leading-tight">
-							<span class="font-bold">{letter.name}</span>
-							<span lang="ar" dir="rtl" class="font-arabic text-ink/70">{letter.arabicName}</span>
-						</span>
-					</li>
+			<ul class={['grid gap-2', letters ? 'grid-cols-2' : 'grid-cols-1']}>
+				{#each review as item (item.id)}
+					{#if letters}
+						<li class="flex items-center gap-3 rounded-card bg-white px-4 py-2 shadow-soft">
+							<span
+								lang="ar"
+								dir="rtl"
+								class="w-9 shrink-0 text-center font-arabic text-3xl leading-normal font-bold"
+								>{item.arabic}</span
+							>
+							<span class="flex min-w-0 flex-col items-start leading-tight">
+								<span class="font-bold">{item.label}</span>
+								<span lang="ar" dir="rtl" class="font-arabic text-ink/70">{item.detail}</span>
+							</span>
+						</li>
+					{:else}
+						<li class="flex flex-col gap-1 rounded-card bg-white px-4 py-3 shadow-soft">
+							<span
+								lang="ar"
+								dir="rtl"
+								class="text-right font-arabic text-2xl leading-loose font-bold">{item.arabic}</span
+							>
+							<span class="font-bold">{item.label}</span>
+							<span class="text-sm text-ink/75">{item.detail}</span>
+						</li>
+					{/if}
 				{/each}
 			</ul>
 		</section>

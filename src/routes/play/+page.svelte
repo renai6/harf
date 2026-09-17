@@ -63,14 +63,17 @@
 			clearTimeout(flashTimer);
 			flashTimer = setTimeout(() => (flash = false), 200);
 		} else if (outcome === 'finished') {
-			save = store.saveRun(playerId, {
-				board: boardKey(state.config),
-				score: state.score,
-				correct: state.counters.correct,
-				attempts: attempts(state.counters),
-				bestStreak: state.counters.bestStreak,
-				missed: [...state.missed]
-			});
+			// Practice and sprints where speech stopped are never saved (spec 5.6).
+			save = !state.ranked
+				? null
+				: store.saveRun(playerId, {
+						board: boardKey(state.config),
+						score: state.score,
+						correct: state.counters.correct,
+						attempts: attempts(state.counters),
+						bestStreak: state.counters.bestStreak,
+						missed: [...state.missed]
+					});
 			announcement = `Time is up. You scored ${state.score}.`;
 		} else if (state.reveal) {
 			const correct = letterByChar(state.reveal.correct);
