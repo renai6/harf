@@ -43,6 +43,8 @@ test('scores words read aloud, ignores other speech and skips on request', async
 	await page.clock.fastForward(60_000);
 	await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
 	await expect(page.getByText('New personal best')).toBeVisible();
+	// Pins the heading a ranked run shows, so the unranked test's hidden assertion means something.
+	await expect(page.getByRole('heading', { name: 'Top 3' })).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Review what you missed' })).toBeVisible();
 	expect((await speechState(page)).active).toBe(false);
 	expect(await savedRuns(page)).toBe(1);
