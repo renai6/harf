@@ -7,7 +7,9 @@
 	const MESSAGES: Record<Notice, string> = {
 		'corrupt-reset':
 			'Saved data could not be read, so the game started fresh. A backup copy was kept in this browser.',
-		'write-failed': 'This browser could not save your latest change. The game still works.'
+		'write-failed': 'This browser could not save your latest change. The game still works.',
+		'newer-version':
+			'Your saved players and scores come from a newer version of the game, so nothing is being saved. Reopen the newer version, or reset all data in Settings.'
 	};
 </script>
 

@@ -169,6 +169,25 @@ describe('failures', () => {
 		expect(store.notice).toBeNull();
 	});
 
+	it('plays but never writes over data from a newer version', () => {
+		const backend = new MemoryBackend();
+		const future = JSON.stringify({ version: 2, players: [{ id: 'p9' }], whatever: true });
+		backend.setItem(STORAGE_KEY, future);
+		const { store, reopen } = setup(backend);
+		expect(store.notice).toBe('newer-version');
+		expect(store.data.players).toEqual([]);
+		expect(store.addPlayer('Sara')).toEqual({ error: 'write-failed' });
+		expect(store.saveRun('id-1', newRun(10))).toEqual({ saved: false });
+		expect(store.setSound(false)).toBe(false);
+		expect(backend.getItem(STORAGE_KEY)).toBe(future);
+
+		// Resetting is the player's way out, and it clears the block.
+		expect(store.resetAll()).toBe(true);
+		expect(store.notice).toBeNull();
+		expect(store.addPlayer('Sara')).toHaveProperty('player.name', 'Sara');
+		expect(reopen().data.players.map((p) => p.name)).toEqual(['Sara']);
+	});
+
 	it('keeps playing when a write fails', () => {
 		const { store, backend } = setup();
 		store.addPlayer('Sara');
@@ -181,6 +200,17 @@ describe('failures', () => {
 });
 
 describe('settings', () => {
+	it('remembers the last setup and skips the write when it is unchanged', () => {
+		const { store, backend, reopen } = setup();
+		expect(store.data.settings.lastSetup).toBeUndefined();
+		store.setLastSetup('sentences:fast:msa');
+		expect(reopen().data.settings.lastSetup).toBe('sentences:fast:msa');
+
+		backend.failWrites = true;
+		store.setLastSetup('sentences:fast:msa');
+		expect(store.notice).toBeNull();
+	});
+
 	it('toggles sound and resets all data', () => {
 		const { store, reopen } = setup();
 		store.addPlayer('Sara');

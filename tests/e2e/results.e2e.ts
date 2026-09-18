@@ -26,9 +26,12 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await expect(page.getByText('New personal best')).toBeVisible();
 	const board = page.getByRole('list', { name: 'Leaderboard' });
 	await expect(board.locator('li[aria-current="true"]')).toContainText('Sara');
+	await expect(page.getByTestId('results-board')).toHaveText('Letters · Relaxed · Isolated');
 	await expect(page.getByRole('heading', { name: 'Review what you missed' })).toBeVisible();
 
 	await page.getByRole('button', { name: 'Again' }).click();
+	// Again unmounts the button that was focused, so the sprint takes the focus.
+	await expect(page.getByRole('main')).toBeFocused();
 	await expect(page.getByText('3', { exact: true })).toBeVisible();
 	await page.clock.fastForward(3_000);
 	await expect(answerButtons(page)).toHaveCount(4);

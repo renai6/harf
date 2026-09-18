@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getStore } from '$lib/storage/app-store';
@@ -14,21 +15,53 @@
 	let renamingId = $state<string | null>(null);
 	let deletingId = $state<string | null>(null);
 	let confirmingReset = $state(false);
+	let playersHeading = $state.raw<HTMLElement | null>(null);
+
+	/**
+	 * Closing a panel unmounts the button that opened it, which would drop keyboard focus to the
+	 * page. Every close puts focus back on a button next to where the player was.
+	 */
+	async function focusAfterClose(id: string) {
+		await tick();
+		document.getElementById(id)?.focus();
+	}
 
 	function rename(id: string, name: string) {
 		const error = store.renamePlayer(id, name);
-		if (!error) renamingId = null;
+		if (!error) {
+			renamingId = null;
+			focusAfterClose(`rename-${id}`);
+		}
 		return error;
 	}
 
-	function remove(id: string) {
+	function cancelRename(id: string) {
+		renamingId = null;
+		focusAfterClose(`rename-${id}`);
+	}
+
+	function cancelDelete(id: string) {
+		deletingId = null;
+		focusAfterClose(`delete-${id}`);
+	}
+
+	async function remove(id: string) {
 		store.deletePlayer(id);
 		deletingId = null;
+		// That player's buttons are gone, so focus lands on the heading above the list.
+		await tick();
+		playersHeading?.focus();
+	}
+
+	function cancelReset() {
+		confirmingReset = false;
+		focusAfterClose('reset-all');
 	}
 
 	function reset() {
 		confirmingReset = false;
 		if (store.resetAll()) goto(resolve('/'));
+		else focusAfterClose('reset-all');
 	}
 </script>
 
@@ -68,7 +101,7 @@
 	</section>
 
 	<section class="flex flex-col gap-2">
-		<h2 class="font-bold">Players</h2>
+		<h2 bind:this={playersHeading} tabindex="-1" class="font-bold">Players</h2>
 		{#if store.data.players.length === 0}
 			<p class="text-ink/75">No players yet.</p>
 		{/if}
@@ -81,14 +114,14 @@
 							submitLabel="Save"
 							initial={player.name}
 							onsubmit={(name) => rename(player.id, name)}
-							oncancel={() => (renamingId = null)}
+							oncancel={() => cancelRename(player.id)}
 						/>
 					{:else if deletingId === player.id}
 						<ConfirmPanel
 							message="Delete {player.name} and all their scores?"
 							confirmLabel="Delete"
 							onconfirm={() => remove(player.id)}
-							oncancel={() => (deletingId = null)}
+							oncancel={() => cancelDelete(player.id)}
 						/>
 					{:else}
 						<div class="flex items-center gap-2 rounded-card bg-white py-1 pr-1 pl-4 shadow-soft">
@@ -97,6 +130,7 @@
 								>{player.name}</span
 							>
 							<Button
+								id="rename-{player.id}"
 								variant="ghost"
 								size="sm"
 								aria-label="Rename {player.name}"
@@ -108,6 +142,7 @@
 								Rename
 							</Button>
 							<Button
+								id="delete-{player.id}"
 								variant="danger"
 								size="sm"
 								aria-label="Delete {player.name}"
@@ -133,10 +168,11 @@
 				message="Delete all players, scores and settings?"
 				confirmLabel="Reset"
 				onconfirm={reset}
-				oncancel={() => (confirmingReset = false)}
+				oncancel={cancelReset}
 			/>
 		{:else}
 			<Button
+				id="reset-all"
 				variant="danger"
 				size="sm"
 				class="self-start"

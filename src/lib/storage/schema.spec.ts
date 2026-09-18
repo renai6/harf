@@ -33,12 +33,35 @@ const valid: StoredData = {
 
 describe('parseData', () => {
 	it('starts empty without a corruption flag when nothing is stored', () => {
-		expect(parseData(null)).toEqual({ data: emptyData(), corrupt: false });
+		expect(parseData(null)).toEqual({ data: emptyData(), corrupt: false, newer: false });
 		expect(isStoredData(emptyData())).toBe(true);
 	});
 
 	it('accepts valid data', () => {
-		expect(parseData(JSON.stringify(valid))).toEqual({ data: valid, corrupt: false });
+		expect(parseData(JSON.stringify(valid))).toEqual({ data: valid, corrupt: false, newer: false });
+	});
+
+	it('accepts a remembered setup and rejects one that is not a board', () => {
+		const withSetup = { ...valid, settings: { sound: true, lastSetup: 'words:fast:msa' } };
+		expect(parseData(JSON.stringify(withSetup))).toEqual({
+			data: withSetup,
+			corrupt: false,
+			newer: false
+		});
+		const bad = JSON.stringify({ ...valid, settings: { sound: true, lastSetup: 'words:fast' } });
+		expect(parseData(bad).corrupt).toBe(true);
+	});
+
+	it('flags data from a newer version without calling it corrupt', () => {
+		for (const version of [2, 7]) {
+			expect(parseData(JSON.stringify({ ...valid, version }))).toEqual({
+				data: emptyData(),
+				corrupt: false,
+				newer: true
+			});
+		}
+		// A version this build does not know how to read, but not a later one, is still corrupt.
+		expect(parseData(JSON.stringify({ ...valid, version: '2' })).corrupt).toBe(true);
 	});
 
 	it('flags unparseable or invalid data as corrupt', () => {
@@ -46,7 +69,7 @@ describe('parseData', () => {
 			'{not json',
 			'null',
 			'[]',
-			JSON.stringify({ ...valid, version: 2 }),
+			JSON.stringify({ ...valid, version: 0 }),
 			JSON.stringify({ ...valid, players: [{ id: 'p1' }] }),
 			JSON.stringify({ ...valid, lastPlayerId: 5 }),
 			JSON.stringify({ ...valid, runs: [{ ...run, board: 'letters:turbo:isolated' }] }),
@@ -55,7 +78,9 @@ describe('parseData', () => {
 			JSON.stringify({ ...valid, bests: { nope: { p1: run } } }),
 			JSON.stringify({ ...valid, settings: {} })
 		];
-		for (const raw of cases) expect(parseData(raw)).toEqual({ data: emptyData(), corrupt: true });
+		for (const raw of cases) {
+			expect(parseData(raw)).toEqual({ data: emptyData(), corrupt: true, newer: false });
+		}
 	});
 });
 

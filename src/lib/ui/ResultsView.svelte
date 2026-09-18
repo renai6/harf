@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { boardLabel } from '$lib/game/levels';
 	import { reviewItems } from '$lib/game/review';
 	import { accuracy, attempts } from '$lib/game/scoring';
 	import type { SprintState } from '$lib/game/sprint';
@@ -28,6 +29,7 @@
 	);
 	const review = $derived(reviewItems(sprint.config, sprint.missed));
 	const letters = $derived(sprint.config.mode === 'letters');
+	const board = $derived(boardLabel(sprint.config));
 
 	let showAllReview = $state(false);
 	const shownReview = $derived(showAllReview ? review : review.slice(0, REVIEW_PREVIEW));
@@ -62,6 +64,7 @@
 	{#if sprint.ranked}
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Top 3</h2>
+			<p data-testid="results-board" class="-mt-2 text-sm text-ink/75">{board}</p>
 			<LeaderboardTable {rows} {currentPlayerId} limit={3} />
 		</section>
 	{/if}

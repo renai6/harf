@@ -10,12 +10,26 @@ const TONES: Record<Sfx, Tone> = {
 
 let context: AudioContext | null = null;
 
+function audio(): AudioContext | null {
+	if (typeof AudioContext === 'undefined') return null;
+	context ??= new AudioContext();
+	void context.resume();
+	return context;
+}
+
+/**
+ * Opens the audio context from inside a user gesture. iOS Safari leaves a context suspended
+ * unless a tap created or resumed it, so without this the first tone of a sprint - seconds later,
+ * with no tap in progress - is silent. Call it from the tap that starts a round.
+ */
+export function primeSfx(): void {
+	audio();
+}
+
 /** Plays a short synthesized tone. Silently does nothing where Web Audio is unavailable. */
 export function playSfx(kind: Sfx): void {
-	if (typeof AudioContext === 'undefined') return;
-	context ??= new AudioContext();
-	const ctx = context;
-	void ctx.resume();
+	const ctx = audio();
+	if (!ctx) return;
 	const { notes, wave, step } = TONES[kind];
 	notes.forEach((frequency, index) => {
 		const start = ctx.currentTime + index * step;
