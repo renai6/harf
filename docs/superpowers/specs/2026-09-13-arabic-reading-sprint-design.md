@@ -96,6 +96,7 @@ Word and sentence limits are based on the spike's measured recognition times.
 - Keyboard: keys 1-4 map to the buttons in reading order (top-left, top-right, bottom-left, bottom-right).
 - **Correct:** the next letter appears immediately.
 - **Wrong:** the chosen button turns red, the correct button turns green, then a 1.5 s lockout before the next letter.
+  The two untouched buttons fade during the reveal, so the correct one stands out.
 - **Time limit reached:** treated like a wrong answer (reveal the correct button, then the lockout).
 - **Variants:**
   - `isolated`: letters in their standalone shape.
@@ -145,10 +146,13 @@ Flow details:
 - Selecting a player sets them as the current player (remembered as `lastPlayerId`) and navigates to `/modes`.
 - Visiting `/modes` or `/play` without a current player redirects to `/`.
 - **New player:** a name field with inline validation (see 8.8).
+- **Sprint setup** reopens on the last sprint that was started, saved as `settings.lastSetup`.
+  Only that sprint's variant is remembered, so the other kind of variant (letter shapes or content pack) stays on its default.
 - **Mic check:** before the first speech sprint in a page session, `/modes` asks the player to say "بِسْمِ اللَّهِ".
   It explains that Chrome sends audio to Google and needs internet.
   Passing continues to the sprint; failure offers retry or unranked practice.
 - **Results view:** score, accuracy, best streak, a "New personal best" badge when applicable, the top 3 on the board with the player's row highlighted, a "Review what you missed" list (Arabic, transliteration, meaning), and Home and Again buttons.
+  The top 3 is labelled with the board it ranks, since the results view is reached without the controls that picked it.
   The badge is withheld from a run that scored nothing, which would otherwise be a player's first run on every board.
   The review list shows its first six items and holds the rest behind a "Show all (n)" button, since a Fast sprint can miss enough to push Home and Again off the screen.
 
@@ -203,12 +207,14 @@ A light peach-to-pink gradient, white floating cards with soft blurred shadows, 
 - Mobile-first single column, centered with a max width of 480px on larger screens, and at least 16px side padding.
 - Tap targets are at least 48px tall.
 - Visible focus rings on all interactive elements.
+- Closing a panel or view that held the focus (rename, delete, confirm, Again) moves focus to the control that opened it, or to the nearest heading when that control is gone.
 - The sprint's feedback (correct, wrong, time up) is announced through an `aria-live="polite"` region.
 
 ### 7.6 Sound
 
 - Short synthesized tones (Web Audio API, no audio files) for correct, wrong and time up.
 - Toggle in Settings, on by default.
+- The audio context is opened from the tap that starts a round, because iOS Safari leaves a context suspended unless a tap created or resumed it.
 - Speech modes play no sounds while listening, so the microphone never hears the game.
 
 ## 8. Architecture
@@ -355,7 +361,10 @@ type StoredData = {
 	lastPlayerId: string | null;
 	runs: Run[]; // newest first, capped at 1000
 	bests: Record<BoardKey, Record<PlayerId, Run>>;
-	settings: { sound: boolean };
+	settings: {
+		sound: boolean;
+		lastSetup?: BoardKey; // the sprint the setup screen reopens on
+	};
 };
 
 type Run = {
@@ -376,6 +385,9 @@ type Run = {
 - The `storage` event reloads state when another tab changes the data.
 - **Validation on load:** unparseable or invalid data is copied to `harf-sprint:corrupt:<timestamp>`, the app starts with empty data, and a notice explains the reset.
 - **Migrations:** `migrate(raw)` upgrades by `version`; v1 is the first version.
+- **Data from a later version:** kept as it is, never rewritten.
+  The app runs on empty data and refuses every write.
+  A notice points at the newer version or at Reset all data, which is the one write still allowed.
 - **Write failure** (for example quota exceeded): a notice is shown, the run is not saved, the game keeps working.
 - **Run cap:** the oldest runs beyond 1000 are dropped; `bests` is stored separately, so bests are never lost.
 - **Player names:** trimmed, internal spaces collapsed, 1-20 characters, unique ignoring case, any script allowed.
@@ -427,6 +439,7 @@ type Pack = { id: 'quran' | 'msa'; name: string; words: Word[]; sentences: Sente
 | Speech network error mid-sprint              | Sprint switches to self-report for the rest of the sprint and is marked unranked. |
 | Tab hidden                                   | Sprint pauses; "Continue" resumes.                                                |
 | Corrupt stored data                          | Backed up under a corrupt key, fresh start, notice shown.                         |
+| Stored data from a later version             | Left untouched, writes refused, notice shown; Reset all data is the way out.      |
 | localStorage write fails                     | Notice shown, run not saved, game continues.                                      |
 | No current player on `/modes` or `/play`     | Redirect to `/`.                                                                  |
 | Invalid `/play` query parameters             | Redirect to `/modes`.                                                             |

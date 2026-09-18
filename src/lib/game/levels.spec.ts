@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_BOARD_KEYS, ITEM_LIMIT_MS, boardKey, isBoardKey, parseBoardKey } from './levels';
+import {
+	ALL_BOARD_KEYS,
+	ITEM_LIMIT_MS,
+	boardKey,
+	boardLabel,
+	isBoardKey,
+	parseBoardKey
+} from './levels';
 
 describe('board keys', () => {
 	it('enumerates the 18 boards', () => {
@@ -31,6 +38,17 @@ describe('board keys', () => {
 			expect(isBoardKey(bad)).toBe(false);
 		}
 		expect(isBoardKey(42)).toBe(false);
+	});
+
+	it('names every board in prose', () => {
+		const labels = ALL_BOARD_KEYS.map((key) => boardLabel(parseBoardKey(key)!));
+		expect(new Set(labels).size).toBe(ALL_BOARD_KEYS.length);
+		expect(boardLabel({ mode: 'letters', level: 'fast', variant: 'forms' })).toBe(
+			'Letters · Fast · All forms'
+		);
+		expect(boardLabel({ mode: 'sentences', level: 'relaxed', variant: 'msa' })).toBe(
+			'Sentences · Relaxed · Modern Standard'
+		);
 	});
 
 	it('uses the spec per-item limits for letters', () => {

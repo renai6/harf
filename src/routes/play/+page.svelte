@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { playSfx } from '$lib/audio/sfx';
+	import { playSfx, primeSfx } from '$lib/audio/sfx';
 	import { letterByChar } from '$lib/content/letters';
 	import { boardKey, parseBoardKey } from '$lib/game/levels';
 	import { attempts } from '$lib/game/scoring';
@@ -37,6 +37,7 @@
 	let runner = $state.raw<SprintRunner | null>(null);
 	let save = $state.raw<SaveResult | null>(null);
 	let announcement = $state('');
+	let sprintMain = $state.raw<HTMLElement | null>(null);
 	let flash = $state(false);
 	let flashTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -68,6 +69,15 @@
 			listener
 		);
 		runner.start();
+	}
+
+	/** Again unmounts the results, so focus moves to the sprint instead of dropping to the page. */
+	async function again() {
+		// This tap is also the chance to open the audio context; see primeSfx.
+		if (store.data.settings.sound) primeSfx();
+		startRound();
+		await tick();
+		sprintMain?.focus();
 	}
 
 	function handleOutcome(outcome: Outcome, state: SprintState, playerId: string) {
@@ -122,7 +132,7 @@
 			{save}
 			rows={boardRows(store.data, boardKey(s.config))}
 			currentPlayerId={player.id}
-			onagain={startRound}
+			onagain={again}
 		/>
 	{:else}
 		<!-- inert keeps keyboard focus inside the modal pause dialog. -->
@@ -135,7 +145,12 @@
 			<Chip tone="crimson" data-testid="sprint-time">{Math.ceil(s.sprintLeft / 1000)}s</Chip>
 		</header>
 
-		<main inert={s.phase === 'paused'} class="flex flex-1 flex-col gap-4">
+		<main
+			bind:this={sprintMain}
+			inert={s.phase === 'paused'}
+			tabindex="-1"
+			class="flex flex-1 flex-col gap-4 outline-none"
+		>
 			{#if s.phase === 'countdown' || s.resumeTo === 'countdown'}
 				<div class="grid flex-1 place-items-center">
 					<p class="text-9xl font-bold text-crimson-deep tabular-nums">

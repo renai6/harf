@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { primeSfx } from '$lib/audio/sfx';
 	import {
 		ITEM_LIMIT_MS,
 		LETTER_VARIANTS,
@@ -9,6 +10,7 @@
 		PACK_VARIANTS,
 		VARIANT_LABELS,
 		boardKey,
+		parseBoardKey,
 		type LetterVariant,
 		type Level,
 		type Mode,
@@ -29,10 +31,14 @@
 	const store = getStore();
 	const player = $derived(store.currentPlayer);
 
-	let mode = $state<Mode>('letters');
-	let level = $state<Level>('normal');
-	let letterVariant = $state<LetterVariant>('isolated');
-	let packVariant = $state<PackVariant>('quran');
+	// The screen reopens on the last sprint that was started. Only that sprint's variant is
+	// remembered, so the other kind of variant falls back to its default.
+	const last = parseBoardKey(store.data.settings.lastSetup ?? '');
+
+	let mode = $state<Mode>(last?.mode ?? 'letters');
+	let level = $state<Level>(last?.level ?? 'normal');
+	let letterVariant = $state<LetterVariant>(last?.mode === 'letters' ? last.variant : 'isolated');
+	let packVariant = $state<PackVariant>(last && last.mode !== 'letters' ? last.variant : 'quran');
 	let checking = $state(false);
 
 	const setup = $derived<Setup>(
@@ -63,6 +69,7 @@
 	}
 
 	function play(practice: boolean) {
+		store.setLastSetup(boardKey(setup));
 		const query = new URLSearchParams({
 			mode: setup.mode,
 			level: setup.level,
@@ -75,6 +82,8 @@
 	}
 
 	function start() {
+		// Opening the audio context needs this tap; see primeSfx.
+		if (store.data.settings.sound) primeSfx();
 		if (setup.mode === 'letters' || micSession.checked) play(false);
 		else checking = true;
 	}

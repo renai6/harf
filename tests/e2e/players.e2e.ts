@@ -28,3 +28,11 @@ test('rejects a duplicate name ignoring case, and an empty name', async ({ page 
 	await expect(page.getByText('Enter a name.')).toBeVisible();
 	await expect(page).toHaveURL('/');
 });
+
+test('cancelling the new player form gives focus back to the button', async ({ page }) => {
+	await createPlayer(page, 'Sara');
+	await page.goto('/');
+	await page.getByRole('button', { name: 'New player' }).click();
+	await page.getByRole('button', { name: 'Cancel' }).click();
+	await expect(page.getByRole('button', { name: 'New player' })).toBeFocused();
+});

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getStore } from '$lib/storage/app-store';
@@ -13,6 +14,13 @@
 
 	function choose(id: string) {
 		if (store.selectPlayer(id)) goto(resolve('/modes'));
+	}
+
+	/** Closing the form unmounts it, so focus goes back to the button that opened it. */
+	async function cancelAdding() {
+		adding = false;
+		await tick();
+		document.getElementById('new-player')?.focus();
 	}
 
 	function create(name: string) {
@@ -58,10 +66,11 @@
 			label="Your name"
 			submitLabel="Let's go"
 			onsubmit={create}
-			oncancel={hasPlayers ? () => (adding = false) : undefined}
+			oncancel={hasPlayers ? cancelAdding : undefined}
 		/>
 	{:else}
 		<button
+			id="new-player"
 			type="button"
 			class={buttonClass('secondary', { class: 'w-full' })}
 			onclick={() => (adding = true)}

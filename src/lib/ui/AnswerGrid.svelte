@@ -38,7 +38,8 @@
 			class={[
 				'flex min-h-18 flex-wrap items-center justify-center gap-x-2 rounded-button px-3 py-2 text-lg shadow-soft transition',
 				look === 'idle' && 'bg-white text-ink',
-				look === 'idle' && disabled && 'opacity-60',
+				// During the reveal the answers nobody touched step back, so the right one stands out.
+				look === 'idle' && (reveal ? 'opacity-40' : disabled && 'opacity-60'),
 				// White on success green is under 3:1 contrast; ink reads clearly.
 				look === 'correct' && 'bg-success text-ink',
 				look === 'wrong' && 'shake bg-crimson-deep text-white'

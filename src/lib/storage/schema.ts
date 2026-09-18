@@ -1,5 +1,6 @@
 import { isBoardKey, type BoardKey } from '$lib/game/levels';
 
+export const DATA_VERSION = 1;
 export const STORAGE_KEY = 'harf-sprint:v1';
 export const CORRUPT_KEY_PREFIX = 'harf-sprint:corrupt:';
 export const RUN_CAP = 1000;
@@ -28,12 +29,16 @@ export type StoredData = {
 	runs: Run[];
 	/** Best run per board per player id. Kept separately so the run cap never loses bests. */
 	bests: Partial<Record<BoardKey, Record<string, Run>>>;
-	settings: { sound: boolean };
+	settings: {
+		sound: boolean;
+		/** The sprint the player set up last, so the setup screen reopens on it. */
+		lastSetup?: BoardKey;
+	};
 };
 
 export function emptyData(): StoredData {
 	return {
-		version: 1,
+		version: DATA_VERSION,
 		players: [],
 		lastPlayerId: null,
 		runs: [],
@@ -69,7 +74,7 @@ function isRun(v: unknown): v is Run {
 }
 
 export function isStoredData(value: unknown): value is StoredData {
-	if (!isObject(value) || value.version !== 1) return false;
+	if (!isObject(value) || value.version !== DATA_VERSION) return false;
 	const { players, lastPlayerId, runs, bests, settings } = value;
 	return (
 		Array.isArray(players) &&
@@ -83,7 +88,8 @@ export function isStoredData(value: unknown): value is StoredData {
 				isBoardKey(key) && isObject(byPlayer) && Object.values(byPlayer).every(isRun)
 		) &&
 		isObject(settings) &&
-		typeof settings.sound === 'boolean'
+		typeof settings.sound === 'boolean' &&
+		(settings.lastSetup === undefined || isBoardKey(settings.lastSetup))
 	);
 }
 
@@ -92,15 +98,30 @@ export function migrate(value: unknown): unknown {
 	return value;
 }
 
-export function parseData(raw: string | null): { data: StoredData; corrupt: boolean } {
-	if (raw === null) return { data: emptyData(), corrupt: false };
+/** True for data written by a future version of the game, which this build must not rewrite. */
+function isNewer(value: unknown): boolean {
+	return isObject(value) && typeof value.version === 'number' && value.version > DATA_VERSION;
+}
+
+export type ParseResult = {
+	data: StoredData;
+	/** Unreadable data: the caller backs it up and starts fresh. */
+	corrupt: boolean;
+	/** Data from a future version: the caller keeps it and stops writing. */
+	newer: boolean;
+};
+
+export function parseData(raw: string | null): ParseResult {
+	if (raw === null) return { data: emptyData(), corrupt: false, newer: false };
 	try {
-		const value = migrate(JSON.parse(raw));
-		if (isStoredData(value)) return { data: value, corrupt: false };
+		const parsed = JSON.parse(raw);
+		if (isNewer(parsed)) return { data: emptyData(), corrupt: false, newer: true };
+		const value = migrate(parsed);
+		if (isStoredData(value)) return { data: value, corrupt: false, newer: false };
 	} catch {
 		// Unparseable JSON is handled as corrupt below.
 	}
-	return { data: emptyData(), corrupt: true };
+	return { data: emptyData(), corrupt: true, newer: false };
 }
 
 export type NameError = 'empty' | 'too-long' | 'taken';

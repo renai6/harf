@@ -1,3 +1,4 @@
+import type { BoardKey } from '$lib/game/levels';
 import { compareRuns } from '$lib/game/scoring';
 import {
 	CORRUPT_KEY_PREFIX,
@@ -14,7 +15,7 @@ import {
 } from './schema';
 
 export type Backend = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-export type Notice = 'corrupt-reset' | 'write-failed';
+export type Notice = 'corrupt-reset' | 'write-failed' | 'newer-version';
 export type NewRun = Omit<Run, 'id' | 'playerId' | 'finishedAt'>;
 export type SaveResult = { saved: false } | { saved: true; run: Run; personalBest: boolean };
 
@@ -27,6 +28,8 @@ export function createStore(
 ) {
 	let data = $state.raw<StoredData>(emptyData());
 	let notice = $state<Notice | null>(null);
+	/** Set while the stored data comes from a newer version of the game: play, but never overwrite it. */
+	let readOnly = $state(false);
 
 	function readRaw(): string | null {
 		try {
@@ -39,7 +42,10 @@ export function createStore(
 	function load(): void {
 		const raw = readRaw();
 		const result = parseData(raw);
-		if (result.corrupt && raw !== null) {
+		readOnly = result.newer;
+		if (result.newer) {
+			notice = 'newer-version';
+		} else if (result.corrupt && raw !== null) {
 			try {
 				backend.setItem(CORRUPT_KEY_PREFIX + now().getTime(), raw);
 			} catch {
@@ -60,6 +66,7 @@ export function createStore(
 	 * `change` returns null to skip the write, which then counts as not saved.
 	 */
 	function commit(change: (latest: StoredData) => StoredData | null): boolean {
+		if (readOnly) return false;
 		const latest = parseData(readRaw());
 		const next = change(latest.corrupt ? data : latest.data);
 		if (next === null) return false;
@@ -155,6 +162,13 @@ export function createStore(
 		setSound(sound: boolean): boolean {
 			return commit((d) => ({ ...d, settings: { ...d.settings, sound } }));
 		},
+		/** Remembers the sprint the player just set up. A failure here is silent; it only costs a default. */
+		setLastSetup(lastSetup: BoardKey): void {
+			commit((d) =>
+				d.settings.lastSetup === lastSetup ? null : { ...d, settings: { ...d.settings, lastSetup } }
+			);
+		},
+		/** The one write allowed on newer data: the player explicitly throws it away to use this build. */
 		resetAll(): boolean {
 			try {
 				backend.removeItem(STORAGE_KEY);
@@ -162,6 +176,8 @@ export function createStore(
 				notice = 'write-failed';
 				return false;
 			}
+			readOnly = false;
+			if (notice === 'newer-version') notice = null;
 			data = emptyData();
 			return true;
 		}

@@ -96,3 +96,27 @@ test('starts a sprint from a direct /play link and starts afresh after a reload'
 	await expect(answerButtons(page)).toHaveCount(4);
 	await expect(page.getByTestId('sprint-time')).toHaveText('60s');
 });
+
+test('fades the answers nobody chose while the correct one is revealed', async ({ page }) => {
+	await createPlayer(page, 'Sara');
+	await page.getByRole('button', { name: 'Relaxed' }).click();
+	await page.getByRole('button', { name: 'Start' }).click();
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
+	await expect(answerButtons(page)).toHaveCount(4);
+
+	// The fade is a CSS transition, which runs on real time while the sprint clock is paused.
+	const opacities = async () =>
+		Promise.all(
+			(await answerButtons(page).all()).map((button) =>
+				button.evaluate((el) => getComputedStyle(el).opacity)
+			)
+		);
+
+	await answer(page, false);
+	await expect.poll(async () => (await opacities()).filter((o) => o === '0.4')).toHaveLength(2);
+
+	await page.clock.fastForward(1_500);
+	await expect(answerButtons(page).first()).toBeEnabled();
+	await expect.poll(async () => [...new Set(await opacities())]).toEqual(['1']);
+});

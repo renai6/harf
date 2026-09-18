@@ -75,3 +75,8 @@ export const ALL_BOARD_KEYS: readonly BoardKey[] = MODES.flatMap((mode) =>
 		)
 	)
 );
+
+/** Names a board in prose, for headings that show a board without the controls that pick it. */
+export function boardLabel(setup: Setup): string {
+	return `${MODE_LABELS[setup.mode]} · ${LEVEL_LABELS[setup.level]} · ${VARIANT_LABELS[setup.variant]}`;
+}

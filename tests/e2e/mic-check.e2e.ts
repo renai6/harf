@@ -27,7 +27,8 @@ test('a passed mic check starts the speech sprint and is not asked again this se
 	expect((await speechState(page)).active).toBe(false);
 	await page.getByRole('button', { name: /Sentences/ }).click();
 	await page.getByRole('button', { name: 'Start' }).click();
-	await expect(page).toHaveURL('/play?mode=sentences&level=normal&variant=quran');
+	// Modern Standard carries over: the setup screen reopens on the last sprint that was started.
+	await expect(page).toHaveURL('/play?mode=sentences&level=normal&variant=msa');
 });
 
 test('a blocked microphone explains how to allow it and offers practice', async ({ page }) => {

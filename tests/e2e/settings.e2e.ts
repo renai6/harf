@@ -50,3 +50,32 @@ test('a player deleted in another tab is sent back to the pick player screen', a
 		.click();
 	await expect(page).toHaveURL('/');
 });
+
+test('keyboard focus returns to the list after every panel closes', async ({ page }) => {
+	await createPlayer(page, 'Sara');
+	await createPlayer(page, 'Yusuf');
+	await page.goto('/settings');
+	const confirm = page.getByRole('group', { name: 'Confirm' });
+
+	await page.getByRole('button', { name: 'Rename Sara' }).click();
+	await page.getByRole('button', { name: 'Cancel' }).click();
+	await expect(page.getByRole('button', { name: 'Rename Sara' })).toBeFocused();
+
+	await page.getByRole('button', { name: 'Rename Sara' }).click();
+	await page.getByLabel('Rename Sara').fill('Sara Ali');
+	await page.getByRole('button', { name: 'Save' }).click();
+	await expect(page.getByRole('button', { name: 'Rename Sara Ali' })).toBeFocused();
+
+	await page.getByRole('button', { name: 'Delete Yusuf' }).click();
+	await confirm.getByRole('button', { name: 'Cancel' }).click();
+	await expect(page.getByRole('button', { name: 'Delete Yusuf' })).toBeFocused();
+
+	// Yusuf's buttons go with him, so focus lands on the heading above the list.
+	await page.getByRole('button', { name: 'Delete Yusuf' }).click();
+	await confirm.getByRole('button', { name: 'Delete' }).click();
+	await expect(page.getByRole('heading', { name: 'Players' })).toBeFocused();
+
+	await page.getByRole('button', { name: 'Reset all data' }).click();
+	await confirm.getByRole('button', { name: 'Cancel' }).click();
+	await expect(page.getByRole('button', { name: 'Reset all data' })).toBeFocused();
+});
