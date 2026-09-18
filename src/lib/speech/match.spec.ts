@@ -1,34 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { matchTranscript, SENTENCE_THRESHOLD, wordCount } from './match';
+import { matchTranscript, SENTENCE_FORGIVENESS_MIN_WORDS, wordCount } from './match';
 
 describe('matchTranscript: words', () => {
 	it('matches a plain transcript of a vowelled word', () => {
-		expect(matchTranscript('نُور', 'نور', 'word')).toEqual({ matched: true, ratio: 1 });
+		expect(matchTranscript('نُور', 'نور', 'word')).toBe(true);
 	});
 
 	it('matches recognizer spellings of ta marbuta and alef madda', () => {
-		expect(matchTranscript('صَلَاة', 'صلاه', 'word').matched).toBe(true);
-		expect(matchTranscript('قُرْآن', 'قران', 'word').matched).toBe(true);
+		expect(matchTranscript('صَلَاة', 'صلاه', 'word')).toBe(true);
+		expect(matchTranscript('قُرْآن', 'قران', 'word')).toBe(true);
 	});
 
 	it('matches when the previous answer is still at the start of the result', () => {
-		expect(matchTranscript('سَلَام', 'نور سلام', 'word').matched).toBe(true);
+		expect(matchTranscript('سَلَام', 'نور سلام', 'word')).toBe(true);
 	});
 
 	it('ignores tokens before the tail', () => {
-		expect(matchTranscript('سَلَام', 'سلام نور كتاب بيت', 'word')).toEqual({
-			matched: false,
-			ratio: 0
-		});
+		expect(matchTranscript('سَلَام', 'سلام نور كتاب بيت', 'word')).toBe(false);
 	});
 
 	it('does not match a similar but different word', () => {
-		expect(matchTranscript('قَلَم', 'علم', 'word').matched).toBe(false);
+		expect(matchTranscript('قَلَم', 'علم', 'word')).toBe(false);
 	});
 
 	it('takes the tail letter of a merged recognizer result, not an earlier one (spec 11.1)', () => {
-		expect(matchTranscript('ص', 'شن ص', 'word').matched).toBe(true);
-		expect(matchTranscript('ش', 'شن ص', 'word').matched).toBe(false);
+		expect(matchTranscript('ص', 'شن ص', 'word')).toBe(true);
+		expect(matchTranscript('ش', 'شن ص', 'word')).toBe(false);
 	});
 });
 
@@ -36,26 +33,13 @@ describe('matchTranscript: sentences', () => {
 	const basmala = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
 
 	it('matches a full plain transcript', () => {
-		expect(matchTranscript(basmala, 'بسم الله الرحمن الرحيم', 'sentence')).toEqual({
-			matched: true,
-			ratio: 1
-		});
+		expect(matchTranscript(basmala, 'بسم الله الرحمن الرحيم', 'sentence')).toBe(true);
 	});
 
-	it('does not match an unfinished interim transcript of a 4-word sentence', () => {
-		expect(matchTranscript(basmala, 'بسم الله الرحمن', 'sentence')).toEqual({
-			matched: false,
-			ratio: 0.75
-		});
-	});
-
-	it('matches at exactly 80% of a 5-word sentence and not below', () => {
+	it('forgives one missed word of a final 5-word sentence, but not two', () => {
 		const sentence = 'أَنَا أُحِبُّ اللُّغَةَ الْعَرَبِيَّةَ كَثِيرًا';
-		expect(matchTranscript(sentence, 'انا احب اللغه العربيه', 'sentence')).toEqual({
-			matched: true,
-			ratio: 0.8
-		});
-		expect(matchTranscript(sentence, 'انا احب اللغه', 'sentence').matched).toBe(false);
+		expect(matchTranscript(sentence, 'انا احب اللغه العربيه', 'sentence', true)).toBe(true);
+		expect(matchTranscript(sentence, 'انا احب اللغه', 'sentence', true)).toBe(false);
 	});
 
 	it('matches when the previous sentence is still at the start of the result', () => {
@@ -64,28 +48,49 @@ describe('matchTranscript: sentences', () => {
 				'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
 				'قل هو الله احد الحمد لله رب العالمين',
 				'sentence'
-			).matched
+			)
 		).toBe(true);
 	});
 
 	it('counts a repeated expected word only as often as it was heard', () => {
-		expect(matchTranscript('لَا لَا', 'لا', 'sentence')).toEqual({ matched: false, ratio: 0.5 });
+		expect(matchTranscript('لَا لَا', 'لا', 'sentence')).toBe(false);
 	});
 
-	it('pins the sentence threshold at 0.8 and matches a 6-word sentence at 5 of 6 words', () => {
-		expect(SENTENCE_THRESHOLD).toBe(0.8);
-		const sentence = 'لَيْلَةُ الْقَدْرِ خَيْرٌ مِنْ أَلْفِ شَهْرٍ';
-		expect(matchTranscript(sentence, 'ليله القدر خير الف شهر', 'sentence')).toEqual({
-			matched: true,
-			ratio: 5 / 6
-		});
+	it('pins the forgiveness floor at three words', () => {
+		expect(SENTENCE_FORGIVENESS_MIN_WORDS).toBe(3);
+	});
+
+	it('forgives one missed word of a final 3-word sentence', () => {
+		const sentence = 'الْبَيْتُ كَبِيرٌ جِدًّا';
+		expect(matchTranscript(sentence, 'البيت كبير', 'sentence', true)).toBe(true);
+	});
+
+	it('requires both words of a final 2-word sentence', () => {
+		expect(matchTranscript('الْحَمْدُ لِلَّهِ', 'الحمد', 'sentence', true)).toBe(false);
+	});
+});
+
+describe('matchTranscript: interim sentences', () => {
+	const basmala = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+
+	it('requires every word while the recognizer result is still open', () => {
+		expect(matchTranscript(basmala, 'بسم الله الرحمن', 'sentence', false)).toBe(false);
+		expect(matchTranscript(basmala, 'بسم الله الرحمن الرحيم', 'sentence', false)).toBe(true);
+	});
+
+	it('forgives the same missing word once the result is final', () => {
+		expect(matchTranscript(basmala, 'بسم الله الرحمن', 'sentence', true)).toBe(true);
+	});
+
+	it('never forgives a word for a word prompt, final or not', () => {
+		expect(matchTranscript('قَلَم', 'علم', 'word', true)).toBe(false);
 	});
 });
 
 describe('matchTranscript: empty input', () => {
 	it('never matches an empty expected text and scores an empty transcript as 0', () => {
-		expect(matchTranscript('', 'نور', 'word')).toEqual({ matched: false, ratio: 0 });
-		expect(matchTranscript('نُور', '', 'word')).toEqual({ matched: false, ratio: 0 });
+		expect(matchTranscript('', 'نور', 'word')).toBe(false);
+		expect(matchTranscript('نُور', '', 'word')).toBe(false);
 	});
 });
 

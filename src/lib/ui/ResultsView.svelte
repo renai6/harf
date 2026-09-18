@@ -18,25 +18,31 @@
 		onagain: () => void;
 	};
 
-	let { state, save, rows, currentPlayerId, onagain }: Props = $props();
+	let { state: sprint, save, rows, currentPlayerId, onagain }: Props = $props();
+
+	/** A Fast sprint can miss enough items to bury the buttons, so the rest wait behind a tap. */
+	const REVIEW_PREVIEW = 6;
 
 	const percent = $derived(
-		Math.round(accuracy(state.counters.correct, attempts(state.counters)) * 100)
+		Math.round(accuracy(sprint.counters.correct, attempts(sprint.counters)) * 100)
 	);
-	const review = $derived(reviewItems(state.config, state.missed));
-	const letters = $derived(state.config.mode === 'letters');
+	const review = $derived(reviewItems(sprint.config, sprint.missed));
+	const letters = $derived(sprint.config.mode === 'letters');
+
+	let showAllReview = $state(false);
+	const shownReview = $derived(showAllReview ? review : review.slice(0, REVIEW_PREVIEW));
 </script>
 
 <main class="flex flex-1 flex-col gap-6">
 	<section class="rounded-item bg-white p-6 text-center shadow-item">
 		<h1 class="text-lg font-bold text-ink/70">Time's up!</h1>
 		<p data-testid="result-score" class="text-7xl font-bold text-crimson tabular-nums">
-			{state.score}
+			{sprint.score}
 		</p>
-		<p class="text-sm text-ink/75">{state.score === 1 ? 'point' : 'points'}</p>
-		{#if !state.ranked}
+		<p class="text-sm text-ink/75">{sprint.score === 1 ? 'point' : 'points'}</p>
+		{#if !sprint.ranked}
 			<div class="mt-3"><Chip>Practice - not ranked</Chip></div>
-		{:else if save?.saved && save.personalBest}
+		{:else if save?.saved && save.personalBest && sprint.score > 0}
 			<div class="mt-3"><Chip tone="purple">New personal best</Chip></div>
 		{:else if save && !save.saved}
 			<p class="mt-3 text-sm font-bold text-crimson-deep">This run could not be saved.</p>
@@ -48,12 +54,12 @@
 			</div>
 			<div class="rounded-card bg-ink/5 p-3">
 				<dt class="text-xs text-ink/75">Best streak</dt>
-				<dd class="text-2xl font-bold tabular-nums">{state.counters.bestStreak}</dd>
+				<dd class="text-2xl font-bold tabular-nums">{sprint.counters.bestStreak}</dd>
 			</div>
 		</dl>
 	</section>
 
-	{#if state.ranked}
+	{#if sprint.ranked}
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Top 3</h2>
 			<LeaderboardTable {rows} {currentPlayerId} limit={3} />
@@ -63,8 +69,11 @@
 	{#if review.length > 0}
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Review what you missed</h2>
-			<ul class={['grid gap-2', letters ? 'grid-cols-2' : 'grid-cols-1']}>
-				{#each review as item (item.id)}
+			<ul
+				aria-label="Review what you missed"
+				class={['grid gap-2', letters ? 'grid-cols-2' : 'grid-cols-1']}
+			>
+				{#each shownReview as item (item.id)}
 					{#if letters}
 						<li class="flex items-center gap-3 rounded-card bg-white px-4 py-2 shadow-soft">
 							<span
@@ -91,6 +100,11 @@
 					{/if}
 				{/each}
 			</ul>
+			{#if !showAllReview && review.length > REVIEW_PREVIEW}
+				<Button variant="secondary" onclick={() => (showAllReview = true)}>
+					Show all ({review.length})
+				</Button>
+			{/if}
 		</section>
 	{/if}
 

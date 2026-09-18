@@ -75,7 +75,7 @@ export function createSprintRunner(
 		heard = transcript.text;
 		if (
 			phase === 'active' &&
-			matchTranscript(prompt.display, transcript.text, prompt.matchKind).matched
+			matchTranscript(prompt.display, transcript.text, prompt.matchKind, transcript.isFinal)
 		) {
 			dispatch({ type: 'matched', now: performance.now() });
 		}
