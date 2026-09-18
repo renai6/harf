@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { answer, answerButtons, createPlayer, pauseClock } from './helpers';
+import { installFakeSpeech, say } from './speech';
 
 const VIEWPORTS = [
 	{ name: 'phone', width: 390, height: 844 },
@@ -89,13 +90,57 @@ for (const viewport of VIEWPORTS) {
 			await capture(page, viewport.name, '9-settings');
 		});
 
+		test('speech screens fit and are captured', async ({ page }) => {
+			await installFakeSpeech(page);
+			await createPlayer(page, 'Sara');
+			await page.getByRole('button', { name: /Sentences/ }).click();
+			await capture(page, viewport.name, '10-modes-sentences');
+
+			await page.getByRole('button', { name: 'Start' }).click();
+			const check = page.getByRole('region', { name: 'Microphone check' });
+			await check.getByRole('button', { name: 'Start check' }).click();
+			await expect(check.getByTestId('mic')).toContainText('Listening');
+			await capture(page, viewport.name, '11-mic-check');
+
+			await say(page, 'بسم الله');
+			await expect(page.getByText('3', { exact: true })).toBeVisible();
+			await page.clock.fastForward(3_000);
+			await expect(page.getByTestId('prompt')).toBeVisible();
+			await say(page, 'hello');
+			await expect(page.getByTestId('mic')).toContainText('hello');
+			await capture(page, viewport.name, '12-sentence-sprint');
+
+			await page.getByRole('button', { name: 'Skip' }).click();
+			await page.clock.fastForward(61_000);
+			await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
+			await capture(page, viewport.name, '13-sentence-results');
+
+			await page.goto('/play?mode=words&level=normal&variant=msa&practice=1');
+			await expect(page.getByText('3', { exact: true })).toBeVisible();
+			await page.clock.fastForward(3_000);
+			await expect(page.getByRole('button', { name: 'Got it' })).toBeVisible();
+			await capture(page, viewport.name, '14-word-practice');
+
+			await page.getByRole('button', { name: 'Missed' }).click();
+			await page.clock.fastForward(61_000);
+			await expect(page.getByText('Practice - not ranked')).toBeVisible();
+			await capture(page, viewport.name, '15-practice-results');
+
+			await page.goto('/leaderboard');
+			await page.getByRole('button', { name: 'Sentences' }).click();
+			await expect(page.getByRole('list', { name: 'Leaderboard' })).toContainText('Sara');
+			await capture(page, viewport.name, '16-leaderboard-sentences');
+		});
+
 		test('keyboard focus shows a purple ring on the setup screen', async ({ page }) => {
 			await createPlayer(page, 'Sara');
 			// A full load starts keyboard focus at the top; after a client-side navigation SvelteKit resets focus later.
 			await page.goto('/modes');
 			const targets = [
 				page.getByRole('link', { name: 'Switch player' }),
-				page.getByRole('button', { name: 'Letters' }),
+				page.getByRole('button', { name: /Letters/ }),
+				page.getByRole('button', { name: /Words/ }),
+				page.getByRole('button', { name: /Sentences/ }),
 				page.getByRole('button', { name: 'Relaxed' }),
 				page.getByRole('button', { name: 'Normal' }),
 				page.getByRole('button', { name: 'Fast' }),

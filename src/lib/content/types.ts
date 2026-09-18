@@ -36,7 +36,6 @@ export type Sentence = {
 
 export type Pack = {
 	id: PackVariant;
-	name: string;
 	words: readonly Word[];
 	sentences: readonly Sentence[];
 };

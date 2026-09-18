@@ -2,7 +2,6 @@ import type { Pack } from '../types';
 
 export const MSA_PACK: Pack = {
 	id: 'msa',
-	name: 'Modern Standard',
 	words: [
 		{ id: 'm-bayt', text: 'بَيْت', translit: 'bayt', meaning: 'house' },
 		{ id: 'm-maa', text: 'مَاء', translit: "maa'", meaning: 'water' },

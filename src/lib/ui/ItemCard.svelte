@@ -1,5 +1,17 @@
 <script lang="ts">
-	let { text, flash = false }: { text: string; flash?: boolean } = $props();
+	type Size = 'letter' | 'word' | 'sentence';
+
+	let {
+		text,
+		flash = false,
+		size = 'letter'
+	}: { text: string; flash?: boolean; size?: Size } = $props();
+
+	const FONT_SIZE: Record<Size, string> = {
+		letter: 'clamp(6rem, 40vw, 11rem)',
+		word: 'clamp(3.5rem, 16vw, 5rem)',
+		sentence: 'clamp(1.75rem, 8vw, 2.5rem)'
+	};
 </script>
 
 <div
@@ -15,8 +27,12 @@
 			data-testid="prompt"
 			lang="ar"
 			dir="rtl"
-			class="item-pop font-arabic leading-normal font-bold text-ink"
-			style:font-size="clamp(6rem, 40vw, 11rem)"
+			class={[
+				'item-pop font-arabic font-bold text-ink',
+				// Sentences wrap, and loose lines keep harakat on neighboring lines apart.
+				size === 'sentence' ? 'text-center leading-loose' : 'leading-normal'
+			]}
+			style:font-size={FONT_SIZE[size]}
 		>
 			{text}
 		</p>

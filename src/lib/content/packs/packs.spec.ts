@@ -14,10 +14,9 @@ const ID_PREFIX = { quran: 'q-', msa: 'm-' } as const;
 const packs = Object.values(PACKS);
 
 describe('packs', () => {
-	it('are keyed by their own id and named', () => {
+	it('are keyed by their own id', () => {
 		for (const [key, pack] of Object.entries(PACKS)) {
 			expect(pack.id).toBe(key);
-			expect(pack.name.length).toBeGreaterThan(0);
 		}
 	});
 

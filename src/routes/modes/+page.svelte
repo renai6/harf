@@ -6,16 +6,22 @@
 		LETTER_VARIANTS,
 		LEVELS,
 		LEVEL_LABELS,
+		PACK_VARIANTS,
 		VARIANT_LABELS,
 		boardKey,
 		type LetterVariant,
-		type Level
+		type Level,
+		type Mode,
+		type PackVariant,
+		type Setup
 	} from '$lib/game/levels';
 	import { accuracy } from '$lib/game/scoring';
+	import { micSession } from '$lib/speech/session';
 	import { getStore } from '$lib/storage/app-store';
 	import { playerBest } from '$lib/storage/boards';
 	import Avatar from '$lib/ui/Avatar.svelte';
 	import Button from '$lib/ui/Button.svelte';
+	import MicCheck from '$lib/ui/MicCheck.svelte';
 	import ModeTile from '$lib/ui/ModeTile.svelte';
 	import SegmentedControl from '$lib/ui/SegmentedControl.svelte';
 	import { buttonClass } from '$lib/ui/styles';
@@ -23,31 +29,54 @@
 	const store = getStore();
 	const player = $derived(store.currentPlayer);
 
+	let mode = $state<Mode>('letters');
 	let level = $state<Level>('normal');
-	let variant = $state<LetterVariant>('isolated');
+	let letterVariant = $state<LetterVariant>('isolated');
+	let packVariant = $state<PackVariant>('quran');
+	let checking = $state(false);
 
-	const best = $derived(
-		player
-			? playerBest(store.data, boardKey({ mode: 'letters', level, variant }), player.id)
-			: undefined
+	const setup = $derived<Setup>(
+		mode === 'letters'
+			? { mode, level, variant: letterVariant }
+			: { mode, level, variant: packVariant }
 	);
+	const best = $derived(player ? playerBest(store.data, boardKey(setup), player.id) : undefined);
 
+	const ITEM = { letters: 'letter', words: 'word', sentences: 'sentence' } as const;
 	const levelOptions = LEVELS.map((value) => ({ value, label: LEVEL_LABELS[value] }));
-	const variantOptions = LETTER_VARIANTS.map((value) => ({ value, label: VARIANT_LABELS[value] }));
-	const VARIANT_HINTS: Record<LetterVariant, string> = {
+	const letterOptions = LETTER_VARIANTS.map((value) => ({ value, label: VARIANT_LABELS[value] }));
+	const packOptions = PACK_VARIANTS.map((value) => ({ value, label: VARIANT_LABELS[value] }));
+	const VARIANT_HINTS: Record<LetterVariant | PackVariant, string> = {
 		isolated: 'Each letter on its own',
-		forms: 'Letters as they look at the start, middle or end of a word'
+		forms: 'Letters as they look at the start, middle or end of a word',
+		quran: 'Words and short ayat from the Quran',
+		msa: 'Everyday words and sentences'
 	};
 
 	$effect(() => {
 		if (!player) goto(resolve('/'), { replaceState: true });
 	});
 
-	function start() {
-		const query = new URLSearchParams({ mode: 'letters', level, variant });
+	function selectMode(next: Mode) {
+		mode = next;
+		checking = false;
+	}
+
+	function play(practice: boolean) {
+		const query = new URLSearchParams({
+			mode: setup.mode,
+			level: setup.level,
+			variant: setup.variant,
+			...(practice ? { practice: '1' } : {})
+		});
 		// resolve() cannot add a query string, so the resolved path is extended here.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(`${resolve('/play')}?${query}`);
+	}
+
+	function start() {
+		if (setup.mode === 'letters' || micSession.checked) play(false);
+		else checking = true;
 	}
 </script>
 
@@ -69,27 +98,50 @@
 		<h1 class="text-2xl font-bold">Pick a sprint</h1>
 
 		<div class="grid grid-cols-3 gap-3">
-			<ModeTile arabic="ب" title="Letters" selected />
-			<ModeTile arabic="كَلِمَة" title="Words" subtitle="Coming soon" selected={false} disabled />
+			<ModeTile
+				arabic="ب"
+				title="Letters"
+				subtitle="Pick the name"
+				selected={mode === 'letters'}
+				onclick={() => selectMode('letters')}
+			/>
+			<ModeTile
+				arabic="كَلِمَة"
+				title="Words"
+				subtitle="Read aloud"
+				selected={mode === 'words'}
+				onclick={() => selectMode('words')}
+			/>
 			<ModeTile
 				arabic="جُمْلَة"
 				title="Sentences"
-				subtitle="Coming soon"
-				selected={false}
-				disabled
+				subtitle="Read aloud"
+				selected={mode === 'sentences'}
+				onclick={() => selectMode('sentences')}
 			/>
 		</div>
 
 		<section class="flex flex-col gap-2">
 			<h2 class="font-bold">Speed</h2>
 			<SegmentedControl label="Speed" options={levelOptions} bind:value={level} />
-			<p class="text-sm text-ink/75">{ITEM_LIMIT_MS.letters[level] / 1000} seconds per letter</p>
+			<p class="text-sm text-ink/75">
+				{ITEM_LIMIT_MS[mode][level] / 1000} seconds per {ITEM[mode]}
+			</p>
 		</section>
 
 		<section class="flex flex-col gap-2">
-			<h2 class="font-bold">Letter shapes</h2>
-			<SegmentedControl label="Letter shapes" options={variantOptions} bind:value={variant} />
-			<p class="text-sm text-ink/75">{VARIANT_HINTS[variant]}</p>
+			{#if mode === 'letters'}
+				<h2 class="font-bold">Letter shapes</h2>
+				<SegmentedControl
+					label="Letter shapes"
+					options={letterOptions}
+					bind:value={letterVariant}
+				/>
+			{:else}
+				<h2 class="font-bold">Content</h2>
+				<SegmentedControl label="Content" options={packOptions} bind:value={packVariant} />
+			{/if}
+			<p class="text-sm text-ink/75">{VARIANT_HINTS[setup.variant]}</p>
 		</section>
 
 		<dl class="grid grid-cols-3 gap-3 rounded-card bg-white p-4 text-center shadow-soft">
@@ -109,6 +161,14 @@
 			</div>
 		</dl>
 
-		<Button class="mt-auto w-full text-lg" onclick={start}>Start</Button>
+		{#if checking}
+			<MicCheck
+				onpass={() => play(false)}
+				onpractice={() => play(true)}
+				oncancel={() => (checking = false)}
+			/>
+		{:else}
+			<Button class="mt-auto w-full text-lg" onclick={start}>Start</Button>
+		{/if}
 	</main>
 {/if}

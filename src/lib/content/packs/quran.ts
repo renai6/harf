@@ -2,7 +2,6 @@ import type { Pack } from '../types';
 
 export const QURAN_PACK: Pack = {
 	id: 'quran',
-	name: 'Quranic',
 	words: [
 		{ id: 'q-allah', text: 'اللَّه', translit: 'allaah', meaning: 'God (Allah)' },
 		{ id: 'q-rabb', text: 'رَبّ', translit: 'rabb', meaning: 'Lord' },
