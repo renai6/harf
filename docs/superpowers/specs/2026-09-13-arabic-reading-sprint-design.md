@@ -149,6 +149,8 @@ Flow details:
   It explains that Chrome sends audio to Google and needs internet.
   Passing continues to the sprint; failure offers retry or unranked practice.
 - **Results view:** score, accuracy, best streak, a "New personal best" badge when applicable, the top 3 on the board with the player's row highlighted, a "Review what you missed" list (Arabic, transliteration, meaning), and Home and Again buttons.
+  The badge is withheld from a run that scored nothing, which would otherwise be a player's first run on every board.
+  The review list shows its first six items and holds the rest behind a "Show all (n)" button, since a Fast sprint can miss enough to push Home and Again off the screen.
 
 ## 7. Visual design
 
@@ -336,7 +338,10 @@ Matching (`match.ts`):
 - `normalize` strips harakat, superscript alef, Quranic annotation marks and tatweel; unifies أ إ آ ٱ to ا, ة to ه, ى and ئ to ي, ؤ to و; removes standalone hamza and punctuation; collapses whitespace.
 - Only the tail of a transcript is compared: the last `expectedWordCount + 2` tokens.
 - A word matches when its normalized token appears in the tail.
-- A sentence matches when at least 80% of its normalized words appear in the tail.
+- A sentence matches when all of its normalized words appear in the tail, except that a final result for a sentence of three or more words may miss one of them.
+- The one-word allowance applies only to final results.
+  Measured against the shipped packs, an 80% ratio forgave a word in just 4 of 26 Quranic sentences and none of the 26 MSA ones, because most are two to four words long; the allowance is stated directly so its effect is visible.
+  Interim results are excluded because a word missing from an open result usually means "not said yet" rather than "not recognized", and forgiving it would score the reader before the end of the sentence.
 - Interim results count, so the game advances as early as possible.
 
 ### 8.8 Storage

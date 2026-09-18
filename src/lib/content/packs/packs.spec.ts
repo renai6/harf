@@ -102,7 +102,7 @@ for (const pack of packs) {
 
 		it('matches every item against its own text', () => {
 			for (const item of items) {
-				expect(matchTranscript(item.text, item.text, item.kind).matched, item.id).toBe(true);
+				expect(matchTranscript(item.text, item.text, item.kind), item.id).toBe(true);
 			}
 		});
 	});

@@ -63,9 +63,9 @@
 			status = 'timeout';
 		}, TIMEOUT_MS);
 		listener.start({
-			onTranscript: ({ text }) => {
+			onTranscript: ({ text, isFinal }) => {
 				heard = text;
-				if (!matchTranscript(PHRASE, text, 'sentence').matched) return;
+				if (!matchTranscript(PHRASE, text, 'sentence', isFinal)) return;
 				end();
 				micSession.pass();
 				onpass();
