@@ -1,7 +1,8 @@
 # Harf Sprint
 
 A 60-second Arabic reading sprint for the whole family.
-Letters mode is multiple choice; words and sentences with speech recognition arrive in Phase 2.
+Letters, words and sentences are all read aloud and checked by speech recognition.
+Without a microphone a sprint becomes unranked practice: letters pick the name from four buttons, words and sentences self-report.
 Players and scores are stored only in the browser (localStorage).
 
 ## Develop

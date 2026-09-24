@@ -42,6 +42,18 @@ test('a blocked microphone explains how to allow it and offers practice', async 
 	await expect(page).toHaveURL('/play?mode=words&level=normal&variant=quran&practice=1');
 });
 
+test('a letters sprint offers the answer buttons when the microphone is blocked', async ({
+	page
+}) => {
+	await installFakeSpeech(page, { denied: true });
+	await createPlayer(page, 'Sara');
+	await page.getByRole('button', { name: 'Start' }).click();
+	await micCheck(page).getByRole('button', { name: 'Start check' }).click();
+	await expect(micCheck(page)).toContainText('Practice picks the name from four buttons');
+	await micCheck(page).getByRole('button', { name: 'Practice' }).click();
+	await expect(page).toHaveURL('/play?mode=letters&level=normal&variant=isolated&practice=1');
+});
+
 test('a check that hears nothing times out and can be retried', async ({ page }) => {
 	await pauseClock(page);
 	await installFakeSpeech(page);

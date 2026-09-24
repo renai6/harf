@@ -47,10 +47,7 @@
 	});
 
 	function sprintConfig(): SprintConfig | null {
-		if (!setup) return null;
-		return setup.mode === 'letters'
-			? { ...setup, rng: Math.random }
-			: { ...setup, rng: Math.random, practice };
+		return setup ? { ...setup, rng: Math.random, practice } : null;
 	}
 
 	function startRound() {
@@ -61,8 +58,7 @@
 		announcement = '';
 		// Captured now, so another tab switching player mid-sprint cannot move the run to someone else.
 		const playerId = player.id;
-		const listener =
-			config.mode !== 'letters' && !config.practice ? createWebSpeechListener() : undefined;
+		const listener = config.practice ? undefined : createWebSpeechListener();
 		runner = createSprintRunner(
 			config,
 			(outcome, state) => handleOutcome(outcome, state, playerId),
@@ -105,11 +101,12 @@
 			announcement = `Time is up. You scored ${state.score}.`;
 		} else if (outcome === 'skip') {
 			announcement = 'Skipped.';
-		} else if (state.config.mode !== 'letters') {
-			announcement = outcome === 'wrong' ? 'Missed.' : 'Out of time.';
 		} else if (state.reveal) {
+			// Only the tap fallback reveals the answer; a spoken miss just moves on.
 			const correct = letterByChar(state.reveal.correct);
 			announcement = `${outcome === 'wrong' ? 'Not quite' : 'Out of time'}. It was ${correct.name}.`;
+		} else {
+			announcement = outcome === 'wrong' ? 'Missed.' : 'Out of time.';
 		}
 	}
 
@@ -163,7 +160,13 @@
 					label="Time left for this {ITEM[s.config.mode]}"
 				/>
 				<ItemCard text={s.prompt.display} size={ITEM[s.config.mode]} {flash} />
-				{#if s.prompt.kind === 'letter'}
+				{#if !s.ranked && !practice}
+					<p role="status" class="rounded-card bg-white/70 px-4 py-2 text-sm">
+						Speech recognition is not available, so this sprint is now practice and will not be
+						ranked.
+					</p>
+				{/if}
+				{#if s.input === 'choices' && s.prompt.kind === 'letter'}
 					<AnswerGrid
 						choices={s.prompt.choices}
 						reveal={s.reveal}
@@ -182,12 +185,6 @@
 						</Button>
 					</div>
 				{:else}
-					{#if !s.ranked && !practice}
-						<p role="status" class="rounded-card bg-white/70 px-4 py-2 text-sm">
-							Speech recognition is not available, so this sprint is now practice and will not be
-							ranked.
-						</p>
-					{/if}
 					<div class="grid grid-cols-2 gap-3">
 						<Button
 							variant="secondary"

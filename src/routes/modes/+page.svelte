@@ -52,6 +52,12 @@
 	const levelOptions = LEVELS.map((value) => ({ value, label: LEVEL_LABELS[value] }));
 	const letterOptions = LETTER_VARIANTS.map((value) => ({ value, label: VARIANT_LABELS[value] }));
 	const packOptions = PACK_VARIANTS.map((value) => ({ value, label: VARIANT_LABELS[value] }));
+	/** What the mic check's Practice button leads to, which differs by mode (spec 5.6). */
+	const PRACTICE_HINTS: Record<Mode, string> = {
+		letters: 'Practice picks the name from four buttons and is not ranked.',
+		words: 'Practice uses Got it and Missed buttons and is not ranked.',
+		sentences: 'Practice uses Got it and Missed buttons and is not ranked.'
+	};
 	const VARIANT_HINTS: Record<LetterVariant | PackVariant, string> = {
 		isolated: 'Each letter on its own',
 		forms: 'Letters as they look at the start, middle or end of a word',
@@ -84,7 +90,7 @@
 	function start() {
 		// Opening the audio context needs this tap; see primeSfx.
 		if (store.data.settings.sound) primeSfx();
-		if (setup.mode === 'letters' || micSession.checked) play(false);
+		if (micSession.checked) play(false);
 		else checking = true;
 	}
 </script>
@@ -110,7 +116,7 @@
 			<ModeTile
 				arabic="ب"
 				title="Letters"
-				subtitle="Pick the name"
+				subtitle="Say its name"
 				selected={mode === 'letters'}
 				onclick={() => selectMode('letters')}
 			/>
@@ -172,6 +178,7 @@
 
 		{#if checking}
 			<MicCheck
+				practiceHint={PRACTICE_HINTS[mode]}
 				onpass={() => play(false)}
 				onpractice={() => play(true)}
 				oncancel={() => (checking = false)}

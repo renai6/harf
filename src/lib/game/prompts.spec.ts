@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PACKS } from '$lib/content/packs';
 import { wordCount } from '$lib/speech/match';
-import { letterPrompt, textItem, textItems, textPrompt } from './prompts';
+import { acceptedText, letterPrompt, textItem, textItems, textPrompt } from './prompts';
 import { mulberry32 } from './rng';
 
 describe('letterPrompt', () => {
@@ -10,6 +10,25 @@ describe('letterPrompt', () => {
 		expect(prompt).toMatchObject({ kind: 'letter', id: 'ب', form: 'isolated', display: 'ب' });
 		expect(prompt.choices).toHaveLength(4);
 		expect(prompt.choices).toContain('ب');
+	});
+
+	it("accepts the letter's Arabic name or the bare letter when read aloud", () => {
+		const prompt = letterPrompt('ه', 'isolated', mulberry32(1));
+		expect(prompt.matchKind).toBe('word');
+		expect(prompt.accepts).toEqual(['هاء', 'ه']);
+	});
+
+	it('accepts the same names whatever positional form is shown', () => {
+		const prompt = letterPrompt('ب', 'forms', mulberry32(3));
+		expect(prompt.accepts).toEqual(['باء', 'ب']);
+	});
+});
+
+describe('acceptedText', () => {
+	it('gives a letter its accepted names and a text item its own text', () => {
+		expect(acceptedText(letterPrompt('ج', 'isolated', mulberry32(1)))).toEqual(['جيم', 'ج']);
+		const item = PACKS.quran.words[0];
+		expect(acceptedText(textPrompt('words', 'quran', item.id))).toEqual([item.text]);
 	});
 });
 

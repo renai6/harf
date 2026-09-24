@@ -1,24 +1,33 @@
-import { expect, test } from '@playwright/test';
-import { answer, answerButtons, createPlayer, pauseClock } from './helpers';
+import { expect, test, type Page } from '@playwright/test';
+import { pauseClock, sayLetter, seedPlayer } from './helpers';
+import { installFakeSpeech } from './speech';
+
+/** A ranked letters sprint: relaxed gives 6 s to read each letter aloud. */
+const RANKED = '/play?mode=letters&level=relaxed&variant=isolated';
+
+async function startSprint(page: Page) {
+	await page.goto(RANKED);
+	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
+	await expect(page.getByTestId('mic')).toContainText('Listening');
+}
 
 test.beforeEach(async ({ page }) => {
 	await pauseClock(page);
+	await seedPlayer(page);
+	await installFakeSpeech(page);
 });
 
 test('shows results, saves the run, restarts with Again and persists the best', async ({
 	page
 }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Relaxed' }).click();
-	await page.getByRole('button', { name: 'Start' }).click();
-	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
-	await answer(page, true);
-	await answer(page, true);
-	await answer(page, true);
-	await answer(page, false);
+	await startSprint(page);
+	await sayLetter(page, true);
+	await expect(page.getByTestId('sprint-score')).toHaveText('Score 1');
+	await sayLetter(page, true);
+	await sayLetter(page, true);
+	await sayLetter(page, false);
 	await page.clock.fastForward(61_000);
 
 	await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
@@ -34,8 +43,8 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 	await expect(page.getByRole('main')).toBeFocused();
 	await expect(page.getByText('3', { exact: true })).toBeVisible();
 	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
-	await answer(page, false);
+	await expect(page.getByTestId('mic')).toContainText('Listening');
+	await sayLetter(page, false);
 	await page.clock.fastForward(61_000);
 	await expect(page.getByTestId('result-score')).toHaveText('0');
 	await expect(page.getByText('New personal best')).toBeHidden();
@@ -49,13 +58,8 @@ test('shows results, saves the run, restarts with Again and persists the best', 
 });
 
 test('does not congratulate a first run that scored nothing', async ({ page }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Relaxed' }).click();
-	await page.getByRole('button', { name: 'Start' }).click();
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
-	await answer(page, false);
+	await startSprint(page);
+	await sayLetter(page, false);
 	await page.clock.fastForward(61_000);
 
 	await expect(page.getByTestId('result-score')).toHaveText('0');
@@ -63,23 +67,13 @@ test('does not congratulate a first run that scored nothing', async ({ page }) =
 });
 
 test('shows the first six missed items and reveals the rest on request', async ({ page }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Relaxed' }).click();
-	await page.getByRole('button', { name: 'Start' }).click();
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
-	for (let i = 0; i < 7; i++) {
-		await answer(page, false);
-		// Steps past the wrong-answer lockout so the next prompt accepts a keypress.
-		await page.clock.runFor(1_600);
-	}
+	await startSprint(page);
 	await page.clock.fastForward(61_000);
 
 	const review = page.getByRole('list', { name: 'Review what you missed' });
 	await expect(review.getByRole('listitem')).toHaveCount(6);
 
-	// The run leaves more than six missed: the wrong answers above plus every prompt the jump expired.
+	// Saying nothing for the whole sprint leaves every 6 s letter missed, which is more than six.
 	const showAll = page.getByRole('button', { name: /^Show all \(\d+\)$/ });
 	const total = Number(((await showAll.textContent()) ?? '').match(/\d+/)?.[0]);
 	expect(total).toBeGreaterThan(6);

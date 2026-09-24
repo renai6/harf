@@ -43,6 +43,19 @@ export function matchTranscript(
 	return found >= want.length - (forgiving ? 1 : 0);
 }
 
+/**
+ * True when the transcript matches any accepted spelling of the current item. Letters accept
+ * their Arabic name or the bare letter; words and sentences accept only their own text.
+ */
+export function matchAny(
+	accepted: readonly string[],
+	transcript: string,
+	kind: MatchKind,
+	isFinal = false
+): boolean {
+	return accepted.some((expected) => matchTranscript(expected, transcript, kind, isFinal));
+}
+
 export function wordCount(text: string): number {
 	return tokens(text).length;
 }

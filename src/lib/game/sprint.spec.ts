@@ -14,11 +14,13 @@ import {
 
 type LettersConfig = Extract<SprintConfig, { mode: 'letters' }>;
 
+/** Practice by default, so these tests drive the answer buttons; `spoken` below listens instead. */
 const config = (overrides: Partial<LettersConfig> = {}): LettersConfig => ({
 	mode: 'letters',
 	level: 'normal',
 	variant: 'isolated',
 	rng: mulberry32(1),
+	practice: true,
 	...overrides
 });
 
@@ -33,7 +35,7 @@ const letterOf = (s: SprintState) => {
 };
 const wrongChoice = (s: SprintState) => letterOf(s).choices.find((c) => c !== s.prompt.id)!;
 
-/** A sprint that just left the countdown at now = 3000 (normal level: 3000 ms per letter). */
+/** A sprint that just left the countdown at now = 3000 (normal level: 4000 ms per letter). */
 const activeSprint = (overrides: Partial<LettersConfig> = {}) =>
 	tick(createSprint(config(overrides), 0), COUNTDOWN_MS);
 
@@ -44,7 +46,7 @@ describe('countdown', () => {
 		expect(letterOf(s).choices).toHaveLength(4);
 		expect(letterOf(s).choices).toContain(s.prompt.id);
 		expect(tick(s, 2_999)).toMatchObject({ phase: 'countdown', countdownLeft: 1 });
-		expect(tick(s, 3_000)).toMatchObject({ phase: 'active', sprintLeft: 60_000, itemLeft: 3_000 });
+		expect(tick(s, 3_000)).toMatchObject({ phase: 'active', sprintLeft: 60_000, itemLeft: 4_000 });
 	});
 
 	it('ignores answers during the countdown', () => {
@@ -57,7 +59,7 @@ describe('answering', () => {
 	it('scores a correct answer and deals a different letter immediately', () => {
 		const s = activeSprint();
 		const next = answer(s, s.prompt.id, 3_500);
-		expect(next).toMatchObject({ phase: 'active', score: 1, itemLeft: 3_000, sprintLeft: 59_500 });
+		expect(next).toMatchObject({ phase: 'active', score: 1, itemLeft: 4_000, sprintLeft: 59_500 });
 		expect(next.counters).toMatchObject({ correct: 1, streak: 1, bestStreak: 1 });
 		expect(next.prompt.id).not.toBe(s.prompt.id);
 	});
@@ -81,7 +83,7 @@ describe('answering', () => {
 		expect(next).toMatchObject({
 			phase: 'active',
 			reveal: null,
-			itemLeft: 3_000,
+			itemLeft: 4_000,
 			sprintLeft: 58_000
 		});
 		expect(next.prompt.id).not.toBe(s.prompt.id);
@@ -89,7 +91,7 @@ describe('answering', () => {
 
 	it('records a timeout when the per-item limit passes', () => {
 		const s = activeSprint();
-		const timedOut = tick(s, 6_000);
+		const timedOut = tick(s, 7_000);
 		expect(timedOut).toMatchObject({
 			phase: 'lockout',
 			reveal: { chosen: null, correct: s.prompt.id },
@@ -99,8 +101,8 @@ describe('answering', () => {
 	});
 
 	it('handles several transitions in one tick', () => {
-		const s = tick(activeSprint(), 8_500);
-		expect(s).toMatchObject({ phase: 'active', itemLeft: 2_000 });
+		const s = tick(activeSprint(), 9_500);
+		expect(s).toMatchObject({ phase: 'active', itemLeft: 3_000 });
 		expect(s.counters.timeouts).toBe(1);
 	});
 
@@ -126,15 +128,15 @@ describe('sprint end', () => {
 		s = tick(s, 63_000);
 		expect(s.phase).toBe('finished');
 		expect(s.score).toBe(1);
-		expect(s.counters.timeouts).toBe(13);
-		expect(attempts(s.counters)).toBe(14);
+		expect(s.counters.timeouts).toBe(10);
+		expect(attempts(s.counters)).toBe(11);
 	});
 
 	it('finishes cleanly when time runs out during a lockout', () => {
 		const s = activeSprint({ level: 'fast' });
 		const locked = tick(s, 62_000);
 		expect(locked).toMatchObject({ phase: 'lockout' });
-		expect(locked.counters.timeouts).toBe(20);
+		expect(locked.counters.timeouts).toBe(15);
 		expect(tick(locked, 63_000)).toMatchObject({ phase: 'finished', reveal: null, sprintLeft: 0 });
 	});
 
@@ -151,11 +153,11 @@ describe('pause', () => {
 		let s = reduce(activeSprint(), { type: 'pause', now: 4_000 });
 		expect(s).toMatchObject({ phase: 'paused', resumeTo: 'active' });
 		s = tick(s, 30_000);
-		expect(s).toMatchObject({ phase: 'paused', sprintLeft: 59_000, itemLeft: 2_000 });
+		expect(s).toMatchObject({ phase: 'paused', sprintLeft: 59_000, itemLeft: 3_000 });
 		expect(answer(s, s.prompt.id, 31_000).score).toBe(0);
 		s = reduce(s, { type: 'resume', now: 50_000 });
 		s = tick(s, 50_500);
-		expect(s).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 1_500 });
+		expect(s).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 2_500 });
 	});
 
 	it('returns the same state for ticks while paused, so nothing re-renders', () => {
@@ -163,7 +165,7 @@ describe('pause', () => {
 		expect(tick(paused, 30_000)).toBe(paused);
 		expect(tick(paused, 49_000)).toBe(paused);
 		const resumed = tick(reduce(paused, { type: 'resume', now: 50_000 }), 50_500);
-		expect(resumed).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 1_500 });
+		expect(resumed).toMatchObject({ phase: 'active', sprintLeft: 58_500, itemLeft: 2_500 });
 	});
 
 	it('resumes into the countdown or lockout it paused', () => {
@@ -201,13 +203,65 @@ describe('letter forms', () => {
 	});
 });
 
+describe('spoken letters', () => {
+	/** The ranked letters sprint: the player says the letter's name (spec 5.3). */
+	const spoken = (overrides: Partial<LettersConfig> = {}) =>
+		tick(createSprint(config({ practice: false, ...overrides }), 0), COUNTDOWN_MS);
+	const matched = (s: SprintState, now: number) => reduce(s, { type: 'matched', now });
+	const lost = (s: SprintState, now: number) => reduce(s, { type: 'speechLost', now });
+
+	it('listens instead of showing buttons, and is ranked', () => {
+		expect(spoken()).toMatchObject({ input: 'speech', ranked: true });
+	});
+
+	it('scores a matched letter and deals the next one', () => {
+		const s = spoken();
+		const next = matched(s, 3_500);
+		expect(next).toMatchObject({ phase: 'active', score: 1, itemLeft: 4_000 });
+		expect(next.prompt.id).not.toBe(s.prompt.id);
+	});
+
+	it('ignores a tapped answer while it is listening', () => {
+		const s = spoken();
+		expect(answer(s, s.prompt.id, 3_500)).toMatchObject({ phase: 'active', score: 0 });
+	});
+
+	it('moves straight on when a letter times out, with no reveal and no lockout', () => {
+		const s = spoken();
+		const next = tick(s, 7_000);
+		expect(next).toMatchObject({ phase: 'active', reveal: null, itemLeft: 4_000 });
+		expect(next.counters.timeouts).toBe(1);
+		expect(next.missed).toEqual([s.prompt.id]);
+		expect(next.prompt.id).not.toBe(s.prompt.id);
+	});
+
+	it('skips a letter on request', () => {
+		const s = spoken();
+		const next = reduce(s, { type: 'skip', now: 3_500 });
+		expect(next.counters.skips).toBe(1);
+		expect(next.prompt.id).not.toBe(s.prompt.id);
+	});
+
+	it('falls back to the answer buttons, unranked, when speech is lost', () => {
+		const s = lost(spoken(), 3_500);
+		expect(s).toMatchObject({ phase: 'active', input: 'choices', ranked: false });
+		expect(answer(s, s.prompt.id, 3_600).score).toBe(1);
+	});
+
+	it('locks out a wrong tap and ignores speech once it has fallen back', () => {
+		const s = lost(spoken(), 3_500);
+		expect(answer(s, wrongChoice(s), 3_600)).toMatchObject({ phase: 'lockout', ranked: false });
+		expect(matched(s, 3_600).score).toBe(0);
+	});
+});
+
 describe('outcomeBetween', () => {
 	it('reports what changed', () => {
 		const s = activeSprint();
 		expect(outcomeBetween(s, tick(s, 3_100))).toBeNull();
 		expect(outcomeBetween(s, answer(s, s.prompt.id, 3_100))).toBe('correct');
 		expect(outcomeBetween(s, answer(s, wrongChoice(s), 3_100))).toBe('wrong');
-		expect(outcomeBetween(s, tick(s, 6_000))).toBe('timeout');
+		expect(outcomeBetween(s, tick(s, 7_000))).toBe('timeout');
 		expect(outcomeBetween(s, tick(s, 70_000))).toBe('finished');
 	});
 });

@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { wordCount } from '../../src/lib/speech/match';
-import { pauseClock, savedRuns, seedPlayer, setHidden } from './helpers';
+import {
+	answer,
+	answerButtons,
+	pauseClock,
+	savedRuns,
+	sayLetter,
+	seedPlayer,
+	setHidden
+} from './helpers';
 import { failSpeech, installFakeSpeech, promptText, say, speechState } from './speech';
 
 const FALLBACK =
@@ -48,6 +56,51 @@ test('scores words read aloud, ignores other speech and skips on request', async
 	await expect(page.getByRole('heading', { name: 'Review what you missed' })).toBeVisible();
 	expect((await speechState(page)).active).toBe(false);
 	expect(await savedRuns(page)).toBe(1);
+});
+
+test('scores letters read aloud and drops one that runs out of time', async ({ page }) => {
+	await installFakeSpeech(page);
+	await startSprint(page, '/play?mode=letters&level=normal&variant=isolated');
+	const score = page.getByTestId('sprint-score');
+	await expect(page.getByTestId('mic')).toContainText('Listening');
+	await expect(page.getByRole('group', { name: 'Answers' })).toBeHidden();
+
+	const first = await promptText(page);
+	await sayLetter(page, true);
+	await expect(score).toHaveText('Score 1');
+	await expect(page.getByTestId('prompt')).not.toHaveText(first);
+
+	// Another letter's name is not accepted, and the letter is dropped without a lockout at 4 s.
+	const second = await promptText(page);
+	await sayLetter(page, false);
+	await expect(score).toHaveText('Score 1');
+	await page.clock.fastForward(4_000);
+	await expect(page.getByTestId('prompt')).not.toHaveText(second);
+	await expect(page.getByTestId('mic')).toContainText('Listening');
+
+	await page.clock.fastForward(60_000);
+	await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
+	await expect(page.getByText('New personal best')).toBeVisible();
+	expect(await savedRuns(page)).toBe(1);
+});
+
+test('a letters sprint falls back to the answer buttons, unranked, when speech fails', async ({
+	page
+}) => {
+	await installFakeSpeech(page);
+	await startSprint(page, '/play?mode=letters&level=relaxed&variant=isolated');
+
+	await failSpeech(page, 'network');
+	await expect(page.getByText(FALLBACK)).toBeVisible();
+	await expect(answerButtons(page)).toHaveCount(4);
+	await expect(page.getByRole('button', { name: 'Got it' })).toBeHidden();
+
+	await answer(page, true);
+	await expect(page.getByTestId('sprint-score')).toHaveText('Score 1');
+
+	await page.clock.fastForward(61_000);
+	await expect(page.getByText('Practice - not ranked')).toBeVisible();
+	expect(await savedRuns(page)).toBe(0);
 });
 
 test('scores a sentence at one point per word', async ({ page }) => {

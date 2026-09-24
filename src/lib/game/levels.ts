@@ -22,7 +22,7 @@ export const COUNTDOWN_MS = 3_000;
 export const LOCKOUT_MS = 1_500;
 
 export const ITEM_LIMIT_MS: Record<Mode, Record<Level, number>> = {
-	letters: { relaxed: 6_000, normal: 3_000, fast: 1_500 },
+	letters: { relaxed: 6_000, normal: 4_000, fast: 2_500 },
 	words: { relaxed: 10_000, normal: 6_000, fast: 4_000 },
 	sentences: { relaxed: 20_000, normal: 12_000, fast: 8_000 }
 };

@@ -51,7 +51,7 @@ describe('board keys', () => {
 		);
 	});
 
-	it('uses the spec per-item limits for letters', () => {
-		expect(ITEM_LIMIT_MS.letters).toEqual({ relaxed: 6_000, normal: 3_000, fast: 1_500 });
+	it('gives a spoken letter more time than a tapped one used to get (spec 5.2)', () => {
+		expect(ITEM_LIMIT_MS.letters).toEqual({ relaxed: 6_000, normal: 4_000, fast: 2_500 });
 	});
 });

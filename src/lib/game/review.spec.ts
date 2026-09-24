@@ -5,11 +5,16 @@ import { mulberry32 } from './rng';
 
 describe('reviewItems', () => {
 	it('describes missed letters by transliterated and Arabic name', () => {
-		expect(
-			reviewItems({ mode: 'letters', level: 'normal', variant: 'isolated', rng: mulberry32(1) }, [
-				'ب'
-			])
-		).toEqual([{ id: 'ب', arabic: 'ب', label: 'baa', detail: 'باء' }]);
+		const letters = {
+			mode: 'letters',
+			level: 'normal',
+			variant: 'isolated',
+			rng: mulberry32(1),
+			practice: false
+		} as const;
+		expect(reviewItems(letters, ['ب'])).toEqual([
+			{ id: 'ب', arabic: 'ب', label: 'baa', detail: 'باء' }
+		]);
 	});
 
 	it('describes missed words and sentences by transliteration and meaning, in miss order', () => {

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { answer, answerButtons, createPlayer, pauseClock } from './helpers';
-import { installFakeSpeech, say } from './speech';
+import { answer, answerButtons, createPlayer, pauseClock, sayLetter } from './helpers';
+import { failSpeech, installFakeSpeech, say } from './speech';
 
 const VIEWPORTS = [
 	{ name: 'phone', width: 390, height: 844 },
@@ -43,6 +43,7 @@ for (const viewport of VIEWPORTS) {
 		});
 
 		test('every screen fits and is captured', async ({ page }) => {
+			await installFakeSpeech(page);
 			await page.goto('/');
 			await expect(page.getByLabel('Your name')).toBeVisible();
 			await capture(page, viewport.name, '1-first-visit');
@@ -60,20 +61,22 @@ for (const viewport of VIEWPORTS) {
 			await page.getByRole('button', { name: 'Relaxed' }).click();
 			await page.getByRole('button', { name: 'All forms' }).click();
 			await page.getByRole('button', { name: 'Start' }).click();
+			const check = page.getByRole('region', { name: 'Microphone check' });
+			await expect(check).toBeVisible();
+			await capture(page, viewport.name, '4-mic-check');
+
+			await check.getByRole('button', { name: 'Start check' }).click();
+			await expect(check.getByTestId('mic')).toContainText('Listening');
+			await say(page, 'بسم الله');
 			await expect(page.getByText('3', { exact: true })).toBeVisible();
-			await capture(page, viewport.name, '4-countdown');
+			await capture(page, viewport.name, '5-countdown');
 
 			// With the clock paused, frame-stepping runFor would stop a few milliseconds short of the countdown end.
 			await page.clock.fastForward(3_000);
-			await expect(answerButtons(page)).toHaveCount(4);
-			await answer(page, true);
-			await capture(page, viewport.name, '5-sprint');
-
-			// Lets the correct-answer flash end so it does not mix with the wrong-answer colors.
-			await page.clock.runFor(250);
-			await answer(page, false);
-			await expect(answerButtons(page).first()).toBeDisabled();
-			await capture(page, viewport.name, '6-wrong-answer');
+			await expect(page.getByTestId('mic')).toContainText('Listening');
+			await sayLetter(page, true);
+			await expect(page.getByTestId('sprint-score')).toHaveText('Score 1');
+			await capture(page, viewport.name, '6-sprint');
 
 			await page.clock.fastForward(61_000);
 			await expect(page.getByRole('heading', { name: "Time's up!" })).toBeVisible();
@@ -130,6 +133,18 @@ for (const viewport of VIEWPORTS) {
 			await page.getByRole('button', { name: 'Sentences' }).click();
 			await expect(page.getByRole('list', { name: 'Leaderboard' })).toContainText('Sara');
 			await capture(page, viewport.name, '16-leaderboard-sentences');
+
+			// The letters answer buttons and the reveal belong to the unranked fallback (spec 5.6).
+			await page.goto('/play?mode=letters&level=relaxed&variant=isolated');
+			await expect(page.getByText('3', { exact: true })).toBeVisible();
+			await page.clock.fastForward(3_000);
+			await failSpeech(page, 'network');
+			await expect(answerButtons(page)).toHaveCount(4);
+			await capture(page, viewport.name, '17-letter-fallback');
+
+			await answer(page, false);
+			await expect(answerButtons(page).first()).toBeDisabled();
+			await capture(page, viewport.name, '18-letter-reveal');
 		});
 
 		test('keyboard focus shows a purple ring on the setup screen', async ({ page }) => {
