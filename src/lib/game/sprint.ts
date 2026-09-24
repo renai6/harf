@@ -15,16 +15,10 @@ import { ZERO_COUNTERS, recordCorrect, recordMiss, type Counters } from './scori
 
 export type { LetterPrompt, Prompt, TextPrompt } from './prompts';
 
+/** Unranked practice replaces speech with buttons: letter choices, or Got it and Missed (spec 5.6). */
 export type SprintConfig =
-	| { mode: 'letters'; level: Level; variant: LetterVariant; rng: Rng }
-	| {
-			mode: TextMode;
-			level: Level;
-			variant: PackVariant;
-			rng: Rng;
-			/** Unranked practice: the player reports each item with buttons instead of speaking (spec 5.6). */
-			practice: boolean;
-	  };
+	| { mode: 'letters'; level: Level; variant: LetterVariant; rng: Rng; practice: boolean }
+	| { mode: TextMode; level: Level; variant: PackVariant; rng: Rng; practice: boolean };
 
 /** How the player answers: letter choices, speech, or the Got it and Missed buttons. */
 export type SprintInput = 'choices' | 'speech' | 'selfReport';
@@ -70,6 +64,14 @@ export function itemLimit(config: SprintConfig): number {
 	return ITEM_LIMIT_MS[config.mode][config.level];
 }
 
+/**
+ * What stands in for the microphone. A letter can still be checked honestly without speech, because
+ * its four choices are always dealt with it; a word or sentence can only be self-reported.
+ */
+function fallbackInput(config: SprintConfig): SprintInput {
+	return config.mode === 'letters' ? 'choices' : 'selfReport';
+}
+
 function deckItems(config: SprintConfig): readonly string[] {
 	return config.mode === 'letters'
 		? LETTER_CHARS
@@ -87,7 +89,7 @@ function deal(deck: Deck<string>, config: SprintConfig): { deck: Deck<string>; p
 
 export function createSprint(config: SprintConfig, now: number): SprintState {
 	const { deck, prompt } = deal(newDeck(deckItems(config), config.rng), config);
-	const practice = config.mode !== 'letters' && config.practice;
+	const { practice } = config;
 	return {
 		config,
 		phase: 'countdown',
@@ -97,7 +99,7 @@ export function createSprint(config: SprintConfig, now: number): SprintState {
 		sprintLeft: SPRINT_MS,
 		itemLeft: itemLimit(config),
 		lockoutLeft: 0,
-		input: config.mode === 'letters' ? 'choices' : practice ? 'selfReport' : 'speech',
+		input: practice ? fallbackInput(config) : 'speech',
 		ranked: !practice,
 		deck,
 		prompt,
@@ -134,7 +136,7 @@ function scoreAndNext(state: SprintState): SprintState {
 	});
 }
 
-/** Letters reveal the answer and lock out for 1.5 s (spec 5.3). */
+/** The tap fallback reveals the answer and locks out for 1.5 s (spec 5.6). */
 function lockoutMiss(
 	state: SprintState,
 	kind: 'wrong' | 'timeouts',
@@ -150,7 +152,7 @@ function lockoutMiss(
 	};
 }
 
-/** Words and sentences never lock out: a miss moves straight to the next item (spec 5.4). */
+/** A spoken sprint never locks out: a miss moves straight to the next item (spec 5.4). */
 function moveOnMiss(state: SprintState, kind: 'wrong' | 'timeouts' | 'skips'): SprintState {
 	return nextItem({
 		...state,
@@ -160,7 +162,7 @@ function moveOnMiss(state: SprintState, kind: 'wrong' | 'timeouts' | 'skips'): S
 }
 
 function timeout(state: SprintState): SprintState {
-	return state.prompt.kind === 'letter'
+	return state.input === 'choices'
 		? lockoutMiss(state, 'timeouts', null)
 		: moveOnMiss(state, 'timeouts');
 }
@@ -202,7 +204,7 @@ export function reduce(state: SprintState, event: SprintEvent): SprintState {
 			return state.phase === 'paused' ? state : advance(state, event.now);
 		case 'answer': {
 			const s = advance(state, event.now);
-			if (s.phase !== 'active' || s.prompt.kind !== 'letter') return s;
+			if (s.phase !== 'active' || s.input !== 'choices' || s.prompt.kind !== 'letter') return s;
 			return event.choice === s.prompt.id ? scoreAndNext(s) : lockoutMiss(s, 'wrong', event.choice);
 		}
 		case 'matched': {
@@ -211,7 +213,7 @@ export function reduce(state: SprintState, event: SprintEvent): SprintState {
 		}
 		case 'skip': {
 			const s = advance(state, event.now);
-			return s.phase === 'active' && s.prompt.kind === 'text' ? moveOnMiss(s, 'skips') : s;
+			return s.phase === 'active' && s.input === 'speech' ? moveOnMiss(s, 'skips') : s;
 		}
 		case 'selfReport': {
 			const s = advance(state, event.now);
@@ -221,7 +223,7 @@ export function reduce(state: SprintState, event: SprintEvent): SprintState {
 		case 'speechLost': {
 			const s = advance(state, event.now);
 			if (s.phase === 'finished' || s.input !== 'speech') return s;
-			return { ...s, input: 'selfReport', ranked: false };
+			return { ...s, input: fallbackInput(s.config), ranked: false };
 		}
 		case 'pause': {
 			const s = advance(state, event.now);

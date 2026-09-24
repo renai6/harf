@@ -25,7 +25,7 @@ Scores are saved locally per player and ranked on local leaderboards.
 - Player profiles selected by name.
 - Three modes: Letters, Words, Sentences.
 - 60-second sprints with three speed levels.
-- Letters checked by multiple choice; words and sentences checked by speech recognition.
+- Every mode is read aloud and checked by speech recognition, with unranked practice when speech is unavailable.
 - Local leaderboards per mode, speed level and variant.
 - Two content packs for words and sentences: Quranic and Modern Standard Arabic (MSA).
 - Settings: sound, rename and delete players, reset all data.
@@ -42,22 +42,25 @@ Scores are saved locally per player and ranked on local leaderboards.
 
 ## 4. Key decisions and evidence
 
-### 4.1 Hybrid answer checking
+### 4.1 Answer checking
 
 A speech recognition spike (Chrome 152 desktop, `ar-SA`, one adult voice, 4 runs) measured:
 
-| Content             | Recognized               | Median time to match |
-| ------------------- | ------------------------ | -------------------- |
-| Words               | 80-93%                   | ~2.5 s               |
-| Sentences           | 80-100%                  | ~5 s                 |
-| Single letter names | 32-86% depending on mode | ~1.6 s               |
+| Content             | Recognized                                    | Median time to match |
+| ------------------- | --------------------------------------------- | -------------------- |
+| Words               | 80-93%                                        | ~2.5 s               |
+| Sentences           | 80-100%                                       | ~5 s                 |
+| Single letter names | 32-46% restarting per item, 75-86% continuous | ~1.6 s               |
 
-Single letters were unreliable: short utterances were often dropped, and similar letters were confused (ب as ماء, ذ as ظل, ه as حاء, غ as عين).
 Therefore:
 
-- **Letters** use multiple choice, which is instant, honest and works everywhere.
-- **Words and sentences** use speech recognition, which worked well in testing.
-- If speech is unavailable, words and sentences fall back to unranked practice.
+- **Every mode** uses speech recognition. The listener is continuous, the mode in which letter names scored 75-86%, close to words.
+- If speech is unavailable, a sprint falls back to unranked practice.
+
+**Amended 2026-09-20.** Letters first shipped as multiple choice, on the reading that single letters were recognized 32-86% of the time.
+That range mixed two listening modes: restarting recognition per item dropped most short utterances, while continuous listening, which is what shipped in Phase 2B, did not.
+Letters are read aloud now, and the four answer buttons remain as the unranked fallback (5.6), which is also the only mode that can be checked honestly without a microphone.
+The substitutions the spike recorded (ب as ماء, ذ as ظل, ه as حاء, غ as عين) are accepted as misses: aliasing them would score a player who said a different letter's name.
 
 ### 4.2 Other decisions
 
@@ -83,24 +86,24 @@ Therefore:
 | Level   | Letters | Words | Sentences |
 | ------- | ------- | ----- | --------- |
 | Relaxed | 6 s     | 10 s  | 20 s      |
-| Normal  | 3 s     | 6 s   | 12 s      |
-| Fast    | 1.5 s   | 4 s   | 8 s       |
+| Normal  | 4 s     | 6 s   | 12 s      |
+| Fast    | 2.5 s   | 4 s   | 8 s       |
 
-Word and sentence limits are based on the spike's measured recognition times.
+Every limit is scaled off the spike's measured recognition times: ~1.6 s for a letter, ~2.5 s for a word and ~5 s for a sentence.
 
 ### 5.3 Letters mode
 
-- One letter is shown large, with four answer buttons in a 2x2 grid.
-- Each button shows the transliterated name and the Arabic name, for example "baa · باء".
-  The Arabic name disambiguates letters whose transliterations look alike (حاء "Haa" vs هاء "haa").
-- Keyboard: keys 1-4 map to the buttons in reading order (top-left, top-right, bottom-left, bottom-right).
-- **Correct:** the next letter appears immediately.
-- **Wrong:** the chosen button turns red, the correct button turns green, then a 1.5 s lockout before the next letter.
-  The two untouched buttons fade during the reveal, so the correct one stands out.
-- **Time limit reached:** treated like a wrong answer (reveal the correct button, then the lockout).
+- One letter is shown large on a card, and the player says its name.
+- The microphone listens continuously; a "Listening" indicator and the latest heard text are shown.
+- **Accepted:** the letter's Arabic name (باء) or the bare letter (ب), each compared through `normalizeArabic`, which already folds alef forms, drops hamza and strips harakat.
+  A letter's name does not change with its positional form, so both variants accept the same words.
+- **Match:** the next letter appears immediately.
+- **Skip button:** counts as a miss, no lockout.
+- **Time limit reached:** counts as a miss, no lockout.
 - **Variants:**
   - `isolated`: letters in their standalone shape.
   - `forms`: each letter appears in a random positional form (isolated, initial, medial or final).
+- Four answer buttons are dealt with every letter but only shown in unranked practice (5.6).
 
 ### 5.4 Words and sentences modes
 
@@ -127,9 +130,16 @@ Word and sentence limits are based on the spike's measured recognition times.
 
 Used when speech recognition is unsupported, microphone permission is denied, or the speech service reports a network error.
 
-- Words and sentences are shown the same way, with "Got it" and "Missed" buttons instead of the microphone.
+- The item is shown the same way; what replaces the microphone depends on the mode.
+- **Letters** show the four answer buttons in a 2x2 grid, each with the transliterated name and the Arabic name, for example "baa · باء".
+  The Arabic name disambiguates letters whose transliterations look alike (حاء "Haa" vs هاء "haa").
+  Keys 1-4 map to the buttons in reading order (top-left, top-right, bottom-left, bottom-right).
+  A wrong answer turns the chosen button red and the correct one green, the two untouched buttons fade, and a 1.5 s lockout follows; reaching the time limit reveals the answer the same way.
+  A letter can still be checked honestly this way, which is why it does not self-report.
+- **Words and sentences** show "Got it" and "Missed" buttons, since only the player knows whether they read the item.
 - The results screen is labeled "Practice - not ranked".
 - Practice runs are never saved to runs or leaderboards.
+- Leaderboards keep their `letters:<level>:<variant>` keys. Scores from the multiple-choice era are not comparable with spoken ones, and are left in place rather than migrated, because the app had not been deployed when letters changed.
 
 ## 6. Screens and flow
 
@@ -148,7 +158,7 @@ Flow details:
 - **New player:** a name field with inline validation (see 8.8).
 - **Sprint setup** reopens on the last sprint that was started, saved as `settings.lastSetup`.
   Only that sprint's variant is remembered, so the other kind of variant (letter shapes or content pack) stays on its default.
-- **Mic check:** before the first speech sprint in a page session, `/modes` asks the player to say "بِسْمِ اللَّهِ".
+- **Mic check:** before the first sprint in a page session, `/modes` asks the player to say "بِسْمِ اللَّهِ".
   It explains that Chrome sends audio to Google and needs internet.
   Passing continues to the sprint; failure offers retry or unranked practice.
 - **Results view:** score, accuracy, best streak, a "New personal best" badge when applicable, the top 3 on the board with the player's row highlighted, a "Review what you missed" list (Arabic, transliteration, meaning), and Home and Again buttons.
@@ -272,7 +282,7 @@ A pure reducer with no timers or DOM access, so it is fully unit-testable:
 ```ts
 type SprintEvent =
 	| { type: 'tick'; now: number }
-	| { type: 'answer'; choice: string; now: number } // letters
+	| { type: 'answer'; choice: string; now: number } // letters, unranked practice only
 	| { type: 'matched'; now: number } // speech match
 	| { type: 'skip'; now: number }
 	| { type: 'selfReport'; correct: boolean; now: number } // unranked practice
@@ -432,18 +442,18 @@ type Pack = { id: 'quran' | 'msa'; name: string; words: Word[]; sentences: Sente
 
 ## 10. Error handling and edge cases
 
-| Situation                                    | Behavior                                                                          |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| Speech API unsupported (e.g. Firefox)        | Words and sentences offer unranked practice; letters unaffected.                  |
-| Microphone permission denied                 | Mic check explains how to allow it; offers unranked practice.                     |
-| Speech network error mid-sprint              | Sprint switches to self-report for the rest of the sprint and is marked unranked. |
-| Tab hidden                                   | Sprint pauses; "Continue" resumes.                                                |
-| Corrupt stored data                          | Backed up under a corrupt key, fresh start, notice shown.                         |
-| Stored data from a later version             | Left untouched, writes refused, notice shown; Reset all data is the way out.      |
-| localStorage write fails                     | Notice shown, run not saved, game continues.                                      |
-| No current player on `/modes` or `/play`     | Redirect to `/`.                                                                  |
-| Invalid `/play` query parameters             | Redirect to `/modes`.                                                             |
-| Deleted player still selected in another tab | `storage` event clears the selection; redirect to `/`.                            |
+| Situation                                    | Behavior                                                                                 |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Speech API unsupported (e.g. Firefox)        | Every mode offers unranked practice.                                                     |
+| Microphone permission denied                 | Mic check explains how to allow it; offers unranked practice.                            |
+| Speech network error mid-sprint              | Sprint switches to its practice input for the rest of the sprint and is marked unranked. |
+| Tab hidden                                   | Sprint pauses; "Continue" resumes.                                                       |
+| Corrupt stored data                          | Backed up under a corrupt key, fresh start, notice shown.                                |
+| Stored data from a later version             | Left untouched, writes refused, notice shown; Reset all data is the way out.             |
+| localStorage write fails                     | Notice shown, run not saved, game continues.                                             |
+| No current player on `/modes` or `/play`     | Redirect to `/`.                                                                         |
+| Invalid `/play` query parameters             | Redirect to `/modes`.                                                                    |
+| Deleted player still selected in another tab | `storage` event clears the selection; redirect to `/`.                                   |
 
 ## 11. Testing
 

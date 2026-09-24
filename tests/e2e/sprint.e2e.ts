@@ -1,5 +1,21 @@
-import { expect, test } from '@playwright/test';
-import { answer, answerButtons, createPlayer, pauseClock, setHidden } from './helpers';
+import { expect, test, type Page } from '@playwright/test';
+import { answer, answerButtons, createPlayer, pauseClock, seedPlayer, setHidden } from './helpers';
+
+/**
+ * The letters sprint is read aloud, so its answer buttons only appear in unranked practice
+ * (spec 5.6). These tests drive them, because they are about the sprint clock and the reveal.
+ */
+const practiceUrl = (level = 'relaxed', variant = 'isolated') =>
+	`/play?mode=letters&level=${level}&variant=${variant}&practice=1`;
+
+async function startPractice(page: Page, url = practiceUrl()) {
+	await seedPlayer(page);
+	await page.goto(url);
+	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
+	await expect(page.getByText('3', { exact: true })).toBeVisible();
+	await page.clock.fastForward(3_000);
+	await expect(answerButtons(page)).toHaveCount(4);
+}
 
 test.beforeEach(async ({ page }) => {
 	await pauseClock(page);
@@ -14,13 +30,7 @@ test('redirects without a player or with an invalid setup', async ({ page }) => 
 });
 
 test('counts down, scores correct answers, locks out wrong ones and ends', async ({ page }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Relaxed' }).click();
-	await page.getByRole('button', { name: 'Start' }).click();
-
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
+	await startPractice(page);
 	await expect(page.getByTestId('sprint-time')).toHaveText('60s');
 
 	await answer(page, true);
@@ -38,12 +48,7 @@ test('counts down, scores correct answers, locks out wrong ones and ends', async
 });
 
 test('pauses while the page is hidden and resumes on Continue', async ({ page }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Start' }).click();
-	// The sprint starts once the page mounts; jumping the paused clock before that skips nothing.
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
+	await startPractice(page);
 	const time = page.getByTestId('sprint-time');
 	await expect(time).toHaveText('60s');
 
@@ -68,23 +73,8 @@ test('pauses while the page is hidden and resumes on Continue', async ({ page })
 test('starts a sprint from a direct /play link and starts afresh after a reload', async ({
 	page
 }) => {
-	await page.addInitScript(() => {
-		const player = { id: 'p1', name: 'Sara', createdAt: '2026-09-14T08:00:00.000Z' };
-		const data = {
-			version: 1,
-			players: [player],
-			lastPlayerId: player.id,
-			runs: [],
-			bests: {},
-			settings: { sound: false }
-		};
-		localStorage.setItem('harf-sprint:v1', JSON.stringify(data));
-	});
-	const url = '/play?mode=letters&level=fast&variant=forms';
-	await page.goto(url);
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
+	const url = practiceUrl('fast', 'forms');
+	await startPractice(page, url);
 	await answer(page, true);
 	await expect(page.getByTestId('sprint-score')).toHaveText('Score 1');
 
@@ -98,12 +88,7 @@ test('starts a sprint from a direct /play link and starts afresh after a reload'
 });
 
 test('fades the answers nobody chose while the correct one is revealed', async ({ page }) => {
-	await createPlayer(page, 'Sara');
-	await page.getByRole('button', { name: 'Relaxed' }).click();
-	await page.getByRole('button', { name: 'Start' }).click();
-	await expect(page.getByText('3', { exact: true })).toBeVisible();
-	await page.clock.fastForward(3_000);
-	await expect(answerButtons(page)).toHaveCount(4);
+	await startPractice(page);
 
 	// The fade is a CSS transition, which runs on real time while the sprint clock is paused.
 	const opacities = async () =>

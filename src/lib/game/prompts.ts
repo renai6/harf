@@ -16,6 +16,10 @@ export type LetterPrompt = {
 	form: Form;
 	/** Text to render, including zero-width joiners for positional forms. */
 	display: string;
+	matchKind: MatchKind;
+	/** Spellings that count as saying the letter's name: the Arabic name or the bare letter. */
+	accepts: readonly string[];
+	/** The four answer buttons of the unranked tap fallback (spec 5.6). */
 	choices: readonly string[];
 };
 
@@ -50,8 +54,15 @@ export function letterPrompt(char: string, variant: LetterVariant, rng: Rng): Le
 		id: letter.char,
 		form,
 		display: renderForm(letter.char, form),
+		matchKind: 'word',
+		accepts: [letter.arabicName, letter.char],
 		choices: buildChoices(letter.char, LETTER_CHARS, rng)
 	};
+}
+
+/** What the player may say for this prompt; both kinds go to `matchAny` with `prompt.matchKind`. */
+export function acceptedText(prompt: Prompt): readonly string[] {
+	return prompt.kind === 'letter' ? prompt.accepts : [prompt.display];
 }
 
 export function textPrompt(mode: TextMode, variant: PackVariant, id: string): TextPrompt {

@@ -7,9 +7,15 @@
 	import Button from './Button.svelte';
 	import MicIndicator from './MicIndicator.svelte';
 
-	type Props = { onpass: () => void; onpractice: () => void; oncancel: () => void };
+	type Props = {
+		/** What practice offers in this mode, since letters keep their answer buttons. */
+		practiceHint: string;
+		onpass: () => void;
+		onpractice: () => void;
+		oncancel: () => void;
+	};
 
-	let { onpass, onpractice, oncancel }: Props = $props();
+	let { practiceHint, onpass, onpractice, oncancel }: Props = $props();
 
 	/** Said aloud to prove the microphone and the recognizer work (spec 6). */
 	const PHRASE = 'بِسْمِ اللَّهِ';
@@ -116,7 +122,7 @@
 		<Button variant="secondary" onclick={cancel}>Cancel</Button>
 	{:else}
 		<p role="alert">{MESSAGES[status]}</p>
-		<p class="text-sm text-ink/75">Practice uses Got it and Missed buttons and is not ranked.</p>
+		<p class="text-sm text-ink/75">{practiceHint}</p>
 		<div class="grid grid-cols-2 gap-3">
 			{#if status === 'unsupported'}
 				<Button variant="secondary" onclick={cancel}>Cancel</Button>

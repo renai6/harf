@@ -1,5 +1,6 @@
 import type { ListenerHandlers, SpeechListener, Transcript } from '$lib/speech/listener';
-import { matchTranscript } from '$lib/speech/match';
+import { matchAny } from '$lib/speech/match';
+import { acceptedText } from './prompts';
 import {
 	createSprint,
 	outcomeBetween,
@@ -12,7 +13,7 @@ import {
 
 /**
  * Drives a sprint with requestAnimationFrame and pauses it when the page is hidden.
- * For speech sprints it listens while the sprint runs and turns matching transcripts into answers.
+ * While the sprint listens it turns matching transcripts into answers, for letters and text alike.
  * The countdown starts when the runner is created, so call `start()` straight away.
  */
 export function createSprintRunner(
@@ -71,11 +72,11 @@ export function createSprintRunner(
 
 	function onTranscript(transcript: Transcript) {
 		const { prompt, phase, input } = state;
-		if (input !== 'speech' || prompt.kind !== 'text') return;
+		if (input !== 'speech') return;
 		heard = transcript.text;
 		if (
 			phase === 'active' &&
-			matchTranscript(prompt.display, transcript.text, prompt.matchKind, transcript.isFinal)
+			matchAny(acceptedText(prompt), transcript.text, prompt.matchKind, transcript.isFinal)
 		) {
 			dispatch({ type: 'matched', now: performance.now() });
 		}

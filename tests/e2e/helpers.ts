@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { LETTERS } from '../../src/lib/content/letters';
+import { say } from './speech';
 
 /** Creates a player from the pick player screen and waits for the setup screen. */
 export async function createPlayer(page: Page, name: string) {
@@ -16,12 +17,26 @@ export function answerButtons(page: Page) {
 	return page.getByRole('group', { name: 'Answers' }).getByRole('button');
 }
 
+/** The letter on the item card, in whatever positional form it is shown. */
+async function shownLetter(page: Page) {
+	const shown = (await page.getByTestId('prompt').textContent()) ?? '';
+	const letter = LETTERS.find((l) => l.char === shown.replace(/‍/g, ''));
+	if (!letter) throw new Error(`Unknown prompt: ${shown}`);
+	return letter;
+}
+
+/** Reads the current letter aloud through the fake recognizer, by its own name or another's. */
+export async function sayLetter(page: Page, correct: boolean) {
+	const letter = await shownLetter(page);
+	const said = correct ? letter : LETTERS.find((l) => l.char !== letter.char)!;
+	await say(page, said.arabicName);
+}
+
 /** Answers the current letter with the keyboard, correctly or with a wrong choice. */
 export async function answer(page: Page, correct: boolean) {
 	const prompt = page.getByTestId('prompt');
 	const shown = (await prompt.textContent()) ?? '';
-	const letter = LETTERS.find((l) => l.char === shown.replace(/‍/g, ''));
-	if (!letter) throw new Error(`Unknown prompt: ${shown}`);
+	const letter = await shownLetter(page);
 	const labels = await answerButtons(page).allTextContents();
 	const index = labels.findIndex((label) => label.includes(letter.arabicName) === correct);
 	await page.keyboard.press(String(index + 1));

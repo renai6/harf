@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchTranscript, SENTENCE_FORGIVENESS_MIN_WORDS, wordCount } from './match';
+import { matchAny, matchTranscript, SENTENCE_FORGIVENESS_MIN_WORDS, wordCount } from './match';
 
 describe('matchTranscript: words', () => {
 	it('matches a plain transcript of a vowelled word', () => {
@@ -91,6 +91,27 @@ describe('matchTranscript: empty input', () => {
 	it('never matches an empty expected text and scores an empty transcript as 0', () => {
 		expect(matchTranscript('', 'نور', 'word')).toBe(false);
 		expect(matchTranscript('نُور', '', 'word')).toBe(false);
+	});
+});
+
+describe('matchAny', () => {
+	it('matches a transcript of any accepted spelling', () => {
+		expect(matchAny(['باء', 'ب'], 'باء', 'word')).toBe(true);
+		expect(matchAny(['باء', 'ب'], 'ب', 'word')).toBe(true);
+	});
+
+	it('does not match a spelling that is not accepted', () => {
+		expect(matchAny(['باء', 'ب'], 'ماء', 'word')).toBe(false);
+	});
+
+	it('passes the final flag through, so sentence forgiveness still applies', () => {
+		const sentence = 'الْبَيْتُ كَبِيرٌ جِدًّا';
+		expect(matchAny([sentence], 'البيت كبير', 'sentence', false)).toBe(false);
+		expect(matchAny([sentence], 'البيت كبير', 'sentence', true)).toBe(true);
+	});
+
+	it('never matches when nothing is accepted', () => {
+		expect(matchAny([], 'باء', 'word')).toBe(false);
 	});
 });
 

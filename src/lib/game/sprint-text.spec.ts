@@ -56,14 +56,6 @@ describe('text sprint setup', () => {
 			ranked: false
 		});
 	});
-
-	it('keeps letters sprints on choices, ranked', () => {
-		const s = createSprint(
-			{ mode: 'letters', level: 'normal', variant: 'isolated', rng: mulberry32(1) },
-			0
-		);
-		expect(s).toMatchObject({ input: 'choices', ranked: true });
-	});
 });
 
 describe('speech answers', () => {
@@ -144,20 +136,12 @@ describe('speech loss', () => {
 		});
 	});
 
-	it('changes nothing in practice or letters sprints', () => {
+	it('changes nothing in a practice sprint', () => {
 		const practice = activeText({ practice: true });
 		expect(reduce(practice, { type: 'speechLost', now: 3_500 })).toMatchObject({
 			input: 'selfReport',
 			ranked: false
 		});
-		const letters = reduce(
-			createSprint(
-				{ mode: 'letters', level: 'normal', variant: 'isolated', rng: mulberry32(1) },
-				0
-			),
-			{ type: 'speechLost', now: 1_000 }
-		);
-		expect(letters).toMatchObject({ input: 'choices', ranked: true });
 	});
 });
 
